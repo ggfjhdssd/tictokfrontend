@@ -17,6 +17,19 @@
         .tab-active {
             border-bottom: 3px solid #8B5CF6;
             color: #8B5CF6;
+            font-weight: 600;
+        }
+        .loading-spinner {
+            border: 3px solid rgba(139, 92, 246, 0.3);
+            border-radius: 50%;
+            border-top: 3px solid #8B5CF6;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -35,6 +48,18 @@
                     </svg>
                 </div>
             </div>
+            
+            <!-- Connection Status -->
+            <div id="connectionStatus" class="hidden mt-4 bg-yellow-500/20 border border-yellow-500 rounded-lg p-3 text-yellow-300 text-sm text-center">
+                <span class="inline-flex items-center">
+                    <span class="loading-spinner w-4 h-4 mr-2"></span>
+                    ချိတ်ဆက်နေသည်...
+                </span>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="errorMessage" class="hidden mt-4 bg-red-500/20 border border-red-500 rounded-lg p-3 text-red-300 text-sm text-center">
+            </div>
         </div>
 
         <!-- Stats Cards -->
@@ -48,24 +73,33 @@
                 <p id="totalDeposits" class="text-2xl font-bold">0</p>
             </div>
             <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl p-4 text-white">
-                <p class="text-sm opacity-90">ငွေသွင်းပမာဏ</p>
+                <p class="text-sm opacity-90">စုစုပေါင်းငွေသွင်း</p>
                 <p id="totalDepositAmount" class="text-2xl font-bold">0</p>
             </div>
             <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-4 text-white">
-                <p class="text-sm opacity-90">ငွေထုတ်ပမာဏ</p>
+                <p class="text-sm opacity-90">စုစုပေါင်းငွေထုတ်</p>
                 <p id="totalWithdrawalAmount" class="text-2xl font-bold">0</p>
             </div>
         </div>
 
         <!-- Tabs -->
         <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-6 border border-white/20">
-            <div class="flex space-x-4 border-b border-white/20 mb-6">
-                <button id="tabDeposits" class="tab-btn px-4 py-2 text-white font-semibold transition-all tab-active">
+            <div class="flex space-x-4 border-b border-white/20 mb-6 overflow-x-auto">
+                <button id="tabDeposits" class="tab-btn px-4 py-2 text-white font-semibold transition-all tab-active whitespace-nowrap">
                     💰 ငွေသွင်းရန် စောင့်ဆိုင်း
                 </button>
-                <button id="tabWithdrawals" class="tab-btn px-4 py-2 text-white/70 hover:text-white font-semibold transition-all">
+                <button id="tabWithdrawals" class="tab-btn px-4 py-2 text-white/70 hover:text-white font-semibold transition-all whitespace-nowrap">
                     💸 ငွေထုတ်ရန် စောင့်ဆိုင်း
                 </button>
+                <button id="tabHistory" class="tab-btn px-4 py-2 text-white/70 hover:text-white font-semibold transition-all whitespace-nowrap">
+                    📋 မှတ်တမ်း
+                </button>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" class="hidden text-center py-8">
+                <div class="loading-spinner mx-auto mb-4"></div>
+                <p class="text-purple-300">ဒေတာများ ရယူနေသည်...</p>
             </div>
 
             <!-- Deposits Tab Content -->
@@ -83,16 +117,28 @@
                     <!-- Dynamic content -->
                 </div>
             </div>
+
+            <!-- History Tab Content -->
+            <div id="historyContent" class="tab-content hidden">
+                <h2 class="text-xl font-bold text-white mb-4">📋 အတည်ပြုပြီးသော မှတ်တမ်းများ</h2>
+                <div id="historyList" class="space-y-3">
+                    <p class="text-center text-purple-300 py-8">မှတ်တမ်း ရယူနေသည်...</p>
+                </div>
+            </div>
         </div>
 
         <!-- Reject Modal -->
         <div id="rejectModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
             <div class="bg-gray-800 rounded-2xl p-6 max-w-md w-full">
-                <h3 class="text-xl font-bold text-white mb-4">Reject Reason</h3>
-                <textarea id="rejectReason" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white mb-4" rows="3" placeholder="Enter reason for rejection..."></textarea>
+                <h3 class="text-xl font-bold text-white mb-4">ငြင်းပယ်ရန် အကြောင်းပြချက်</h3>
+                <textarea id="rejectReason" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white mb-4" rows="3" placeholder="အကြောင်းပြချက် ရိုက်ထည့်ပါ..."></textarea>
                 <div class="flex space-x-3">
-                    <button id="confirmReject" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg">Reject</button>
-                    <button id="cancelReject" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-lg">Cancel</button>
+                    <button id="confirmReject" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg transition-all">
+                        ငြင်းပယ်မည်
+                    </button>
+                    <button id="cancelReject" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-all">
+                        ပယ်ဖျက်မည်
+                    </button>
                 </div>
             </div>
         </div>
@@ -103,103 +149,194 @@
         tg.expand();
         tg.ready();
 
+        const API_URL = 'https://tiktocbackend.onrender.com';
         const adminId = tg.initDataUnsafe?.user?.id;
+        
         let currentAction = null;
         let currentId = null;
 
         if (!adminId) {
-            tg.showAlert('Not authenticated');
+            tg.showAlert('Authentication failed');
         }
 
-        // Check if user is admin (server will verify)
+        // UI Helpers
+        function showLoading(show) {
+            const loader = document.getElementById('loadingIndicator');
+            if (show) {
+                loader.classList.remove('hidden');
+            } else {
+                loader.classList.add('hidden');
+            }
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.classList.remove('hidden');
+            
+            setTimeout(() => {
+                errorEl.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Load all data
         loadPending();
         loadStats();
+        loadHistory();
 
         // Tabs
         document.getElementById('tabDeposits').addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active', 'text-white'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active', 'text-white');
+                btn.classList.add('text-white/70');
+            });
             document.getElementById('tabDeposits').classList.add('tab-active', 'text-white');
             document.getElementById('tabDeposits').classList.remove('text-white/70');
-            document.getElementById('tabWithdrawals').classList.remove('tab-active', 'text-white');
-            document.getElementById('tabWithdrawals').classList.add('text-white/70');
             
             document.getElementById('depositsContent').classList.remove('hidden');
             document.getElementById('withdrawalsContent').classList.add('hidden');
+            document.getElementById('historyContent').classList.add('hidden');
         });
 
         document.getElementById('tabWithdrawals').addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('tab-active', 'text-white'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active', 'text-white');
+                btn.classList.add('text-white/70');
+            });
             document.getElementById('tabWithdrawals').classList.add('tab-active', 'text-white');
             document.getElementById('tabWithdrawals').classList.remove('text-white/70');
-            document.getElementById('tabDeposits').classList.remove('tab-active', 'text-white');
-            document.getElementById('tabDeposits').classList.add('text-white/70');
             
             document.getElementById('withdrawalsContent').classList.remove('hidden');
             document.getElementById('depositsContent').classList.add('hidden');
+            document.getElementById('historyContent').classList.add('hidden');
+        });
+
+        document.getElementById('tabHistory').addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('tab-active', 'text-white');
+                btn.classList.add('text-white/70');
+            });
+            document.getElementById('tabHistory').classList.add('tab-active', 'text-white');
+            document.getElementById('tabHistory').classList.remove('text-white/70');
+            
+            document.getElementById('historyContent').classList.remove('hidden');
+            document.getElementById('depositsContent').classList.add('hidden');
+            document.getElementById('withdrawalsContent').classList.add('hidden');
         });
 
         // Load pending requests
         async function loadPending() {
+            showLoading(true);
+            
             try {
-                const response = await fetch(`https://tiktocbackend.onrender.com/api/admin/pending?adminId=${adminId}`);
+                const response = await fetch(`${API_URL}/api/admin/pending?adminId=${adminId}`);
+                
                 if (response.status === 403) {
-                    tg.showAlert('Unauthorized access');
+                    showError('Unauthorized access');
+                    document.body.innerHTML = '<div class="text-center text-white mt-10">⛔ Unauthorized</div>';
                     return;
                 }
+                
                 const data = await response.json();
                 renderDeposits(data.deposits);
                 renderWithdrawals(data.withdrawals);
+                
             } catch (error) {
                 console.error('Error loading pending:', error);
+                showError('ဒေတာရယူ၍ မရပါ။ နောက်မှပြန်ကြိုးစားပါ။');
+            } finally {
+                showLoading(false);
             }
         }
 
         // Load stats
         async function loadStats() {
             try {
-                const response = await fetch(`https://tiktocbackend.onrender.com/api/admin/stats?adminId=${adminId}`);
+                const response = await fetch(`${API_URL}/api/admin/stats?adminId=${adminId}`);
                 const data = await response.json();
                 
                 document.getElementById('totalUsers').textContent = data.totalUsers || 0;
                 document.getElementById('totalDeposits').textContent = data.totalDeposits || 0;
-                document.getElementById('totalDepositAmount').textContent = data.totalDepositAmount.toLocaleString() + ' MMK';
-                document.getElementById('totalWithdrawalAmount').textContent = data.totalWithdrawalAmount.toLocaleString() + ' MMK';
+                document.getElementById('totalDepositAmount').textContent = (data.totalDepositAmount || 0).toLocaleString() + ' MMK';
+                document.getElementById('totalWithdrawalAmount').textContent = (data.totalWithdrawalAmount || 0).toLocaleString() + ' MMK';
+                
             } catch (error) {
                 console.error('Error loading stats:', error);
+            }
+        }
+
+        // Load history
+        async function loadHistory() {
+            try {
+                // This would need a separate endpoint - for now show placeholder
+                const historyEl = document.getElementById('historyList');
+                historyEl.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-purple-300 mb-2">📊 မှတ်တမ်းများ ရယူနေသည်...</p>
+                        <p class="text-purple-400 text-sm">မကြာမီ လုပ်ဆောင်နိုင်မည်</p>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading history:', error);
             }
         }
 
         function renderDeposits(deposits) {
             const container = document.getElementById('depositsList');
             
-            if (deposits.length === 0) {
-                container.innerHTML = '<div class="text-center py-8 text-white/50">No pending deposits</div>';
+            if (!deposits || deposits.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-white/50">✅ ငွေသွင်းရန် စောင့်ဆိုင်းနေသော တောင်းဆိုမှုများ မရှိပါ</div>';
                 return;
             }
 
             let html = '';
             deposits.forEach(d => {
+                const date = new Date(d.createdAt).toLocaleString('my-MM', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
                 html += `
-                    <div class="bg-white/5 rounded-xl p-4 border border-white/10 animate-slideIn">
+                    <div class="bg-white/5 rounded-xl p-4 border border-white/10 animate-slideIn hover:bg-white/10 transition-all">
                         <div class="flex justify-between items-start mb-3">
                             <div>
                                 <p class="text-white font-semibold">@${d.username || 'Unknown'}</p>
-                                <p class="text-sm text-purple-300">ID: ${d.userId}</p>
+                                <p class="text-xs text-purple-300">ID: ${d.userId}</p>
+                                <p class="text-xs text-purple-300">${date}</p>
                             </div>
-                            <span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm">Pending</span>
+                            <span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm font-semibold">
+                                ⏳ Pending
+                            </span>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 mb-3 text-sm">
-                            <p class="text-purple-200">KPay: <span class="text-white">${d.kpayName}</span></p>
-                            <p class="text-purple-200">Txn: <span class="text-white">${d.transactionId}</span></p>
-                            <p class="text-purple-200">ပမာဏ: <span class="text-green-400 font-bold">${d.amount} MMK</span></p>
-                            <p class="text-purple-200">လက်ကျန်: <span class="text-white">${d.userBalance} MMK</span></p>
+                        
+                        <div class="grid grid-cols-2 gap-3 mb-3 text-sm bg-black/20 rounded-lg p-3">
+                            <div>
+                                <p class="text-purple-300 text-xs">KPay Name</p>
+                                <p class="text-white font-medium">${d.kpayName}</p>
+                            </div>
+                            <div>
+                                <p class="text-purple-300 text-xs">Transaction ID</p>
+                                <p class="text-white font-medium text-xs break-all">${d.transactionId}</p>
+                            </div>
+                            <div>
+                                <p class="text-purple-300 text-xs">ပမာဏ</p>
+                                <p class="text-green-400 font-bold">${d.amount.toLocaleString()} MMK</p>
+                            </div>
+                            <div>
+                                <p class="text-purple-300 text-xs">လက်ကျန်</p>
+                                <p class="text-white">${d.userBalance?.toLocaleString() || 0} MMK</p>
+                            </div>
                         </div>
+                        
                         <div class="flex space-x-2">
-                            <button onclick="confirmDeposit('${d._id}')" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition-all">
-                                ✅ Confirm
+                            <button onclick="confirmDeposit('${d._id}')" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2 rounded-lg transition-all transform hover:scale-105">
+                                ✅ အတည်ပြုမည်
                             </button>
-                            <button onclick="showRejectModal('deposit', '${d._id}')" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg transition-all">
-                                ❌ Reject
+                            <button onclick="showRejectModal('deposit', '${d._id}')" class="flex-1 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold py-2 rounded-lg transition-all transform hover:scale-105">
+                                ❌ ငြင်းပယ်မည်
                             </button>
                         </div>
                     </div>
@@ -212,34 +349,59 @@
         function renderWithdrawals(withdrawals) {
             const container = document.getElementById('withdrawalsList');
             
-            if (withdrawals.length === 0) {
-                container.innerHTML = '<div class="text-center py-8 text-white/50">No pending withdrawals</div>';
+            if (!withdrawals || withdrawals.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-white/50">✅ ငွေထုတ်ရန် စောင့်ဆိုင်းနေသော တောင်းဆိုမှုများ မရှိပါ</div>';
                 return;
             }
 
             let html = '';
             withdrawals.forEach(w => {
+                const date = new Date(w.createdAt).toLocaleString('my-MM', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
                 html += `
-                    <div class="bg-white/5 rounded-xl p-4 border border-white/10 animate-slideIn">
+                    <div class="bg-white/5 rounded-xl p-4 border border-white/10 animate-slideIn hover:bg-white/10 transition-all">
                         <div class="flex justify-between items-start mb-3">
                             <div>
                                 <p class="text-white font-semibold">@${w.username || 'Unknown'}</p>
-                                <p class="text-sm text-purple-300">ID: ${w.userId}</p>
+                                <p class="text-xs text-purple-300">ID: ${w.userId}</p>
+                                <p class="text-xs text-purple-300">${date}</p>
                             </div>
-                            <span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm">Pending</span>
+                            <span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm font-semibold">
+                                ⏳ Pending
+                            </span>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 mb-3 text-sm">
-                            <p class="text-purple-200">KPay: <span class="text-white">${w.kpayName}</span></p>
-                            <p class="text-purple-200">နံပါတ်: <span class="text-white">${w.kpayNumber}</span></p>
-                            <p class="text-purple-200">ပမာဏ: <span class="text-red-400 font-bold">${w.amount} MMK</span></p>
-                            <p class="text-purple-200">လက်ကျန်: <span class="text-white">${w.userBalance} MMK</span></p>
+                        
+                        <div class="grid grid-cols-2 gap-3 mb-3 text-sm bg-black/20 rounded-lg p-3">
+                            <div>
+                                <p class="text-purple-300 text-xs">KPay Name</p>
+                                <p class="text-white font-medium">${w.kpayName}</p>
+                            </div>
+                            <div>
+                                <p class="text-purple-300 text-xs">KPay Number</p>
+                                <p class="text-white font-medium">${w.kpayNumber}</p>
+                            </div>
+                            <div>
+                                <p class="text-purple-300 text-xs">ပမာဏ</p>
+                                <p class="text-red-400 font-bold">${w.amount.toLocaleString()} MMK</p>
+                            </div>
+                            <div>
+                                <p class="text-purple-300 text-xs">လက်ကျန်</p>
+                                <p class="text-white">${w.userBalance?.toLocaleString() || 0} MMK</p>
+                            </div>
                         </div>
+                        
                         <div class="flex space-x-2">
-                            <button onclick="confirmWithdrawal('${w._id}')" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition-all">
-                                ✅ Confirm
+                            <button onclick="confirmWithdrawal('${w._id}')" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2 rounded-lg transition-all transform hover:scale-105">
+                                ✅ အတည်ပြုမည်
                             </button>
-                            <button onclick="showRejectModal('withdrawal', '${w._id}')" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg transition-all">
-                                ❌ Reject
+                            <button onclick="showRejectModal('withdrawal', '${w._id}')" class="flex-1 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold py-2 rounded-lg transition-all transform hover:scale-105">
+                                ❌ ငြင်းပယ်မည်
                             </button>
                         </div>
                     </div>
@@ -264,7 +426,7 @@
         });
 
         document.getElementById('confirmReject').addEventListener('click', async () => {
-            const reason = document.getElementById('rejectReason').value.trim();
+            const reason = document.getElementById('rejectReason').value.trim() || 'No reason provided';
             
             if (currentAction === 'deposit') {
                 await rejectDeposit(currentId, reason);
@@ -278,104 +440,106 @@
 
         // Confirm deposit
         window.confirmDeposit = async (depositId) => {
-            if (!confirm('Are you sure you want to confirm this deposit?')) return;
+            if (!confirm('ဤငွေသွင်းတောင်းဆိုမှုကို အတည်ပြုလိုပါသလား?')) return;
             
             try {
-                const response = await fetch('https://tiktocbackend.onrender.com/api/admin/confirm-deposit', {
+                const response = await fetch(`${API_URL}/api/admin/confirm-deposit`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ adminId, depositId })
                 });
                 
                 if (response.ok) {
-                    tg.showAlert('Deposit confirmed successfully');
+                    tg.showAlert('✅ ငွေသွင်းတောင်းဆိုမှု အတည်ပြုပြီးပါပြီ');
                     loadPending();
                     loadStats();
                 } else {
                     const error = await response.json();
-                    tg.showAlert('Error: ' + error.error);
+                    showError('Error: ' + error.error);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                tg.showAlert('Network error');
+                showError('Network error');
             }
         };
 
         // Reject deposit
         window.rejectDeposit = async (depositId, reason) => {
             try {
-                const response = await fetch('https://tiktocbackend.onrender.com/api/admin/reject-deposit', {
+                const response = await fetch(`${API_URL}/api/admin/reject-deposit`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ adminId, depositId, reason })
                 });
                 
                 if (response.ok) {
-                    tg.showAlert('Deposit rejected');
+                    tg.showAlert('❌ ငွေသွင်းတောင်းဆိုမှု ငြင်းပယ်ပြီးပါပြီ');
                     loadPending();
                     loadStats();
                 } else {
                     const error = await response.json();
-                    tg.showAlert('Error: ' + error.error);
+                    showError('Error: ' + error.error);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                tg.showAlert('Network error');
+                showError('Network error');
             }
         };
 
         // Confirm withdrawal
         window.confirmWithdrawal = async (withdrawalId) => {
-            if (!confirm('Are you sure you want to confirm this withdrawal?')) return;
+            if (!confirm('ဤငွေထုတ်တောင်းဆိုမှုကို အတည်ပြုလိုပါသလား?')) return;
             
             try {
-                const response = await fetch('https://tiktocbackend.onrender.com/api/admin/confirm-withdrawal', {
+                const response = await fetch(`${API_URL}/api/admin/confirm-withdrawal`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ adminId, withdrawalId })
                 });
                 
                 if (response.ok) {
-                    tg.showAlert('Withdrawal confirmed successfully');
+                    tg.showAlert('✅ ငွေထုတ်တောင်းဆိုမှု အတည်ပြုပြီးပါပြီ');
                     loadPending();
                     loadStats();
                 } else {
                     const error = await response.json();
-                    tg.showAlert('Error: ' + error.error);
+                    showError('Error: ' + error.error);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                tg.showAlert('Network error');
+                showError('Network error');
             }
         };
 
         // Reject withdrawal
         window.rejectWithdrawal = async (withdrawalId, reason) => {
             try {
-                const response = await fetch('https://tiktocbackend.onrender.com/api/admin/reject-withdrawal', {
+                const response = await fetch(`${API_URL}/api/admin/reject-withdrawal`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ adminId, withdrawalId, reason })
                 });
                 
                 if (response.ok) {
-                    tg.showAlert('Withdrawal rejected');
+                    tg.showAlert('❌ ငွေထုတ်တောင်းဆိုမှု ငြင်းပယ်ပြီးပါပြီ');
                     loadPending();
                     loadStats();
                 } else {
                     const error = await response.json();
-                    tg.showAlert('Error: ' + error.error);
+                    showError('Error: ' + error.error);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                tg.showAlert('Network error');
+                showError('Network error');
             }
         };
 
-        // Refresh every 30 seconds
+        // Auto-refresh every 30 seconds
         setInterval(() => {
-            loadPending();
-            loadStats();
+            if (document.visibilityState === 'visible') {
+                loadPending();
+                loadStats();
+            }
         }, 30000);
     </script>
 </body>
