@@ -1,562 +1,467 @@
 <!DOCTYPE html>
 <html lang="my">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TicToeTic - Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        * { font-family: 'Nunito', sans-serif; box-sizing: border-box; }
-        body { background: #0f0c29; min-height: 100vh; overflow-x: hidden; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>TicToeTic</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
+body{font-family:'Space Grotesk',sans-serif;background:#080810;min-height:100vh;color:#e8e8f0;overflow-x:hidden;}
 
-        /* Animated background */
-        .bg-anim {
-            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-            position: fixed; inset: 0; z-index: -1;
-        }
-        .bg-anim::after {
-            content: '';
-            position: absolute; inset: 0;
-            background: radial-gradient(ellipse at 20% 50%, rgba(120,40,200,0.15) 0%, transparent 60%),
-                        radial-gradient(ellipse at 80% 20%, rgba(255,100,150,0.1) 0%, transparent 50%);
-        }
+/* ── Background ── */
+.bg-layer{position:fixed;inset:0;z-index:0;pointer-events:none;}
+.bg-layer::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 20% 0%,rgba(111,63,245,.18),transparent),
+             radial-gradient(ellipse 60% 50% at 85% 100%,rgba(236,72,153,.12),transparent),
+             radial-gradient(ellipse 40% 40% at 50% 50%,rgba(16,185,129,.06),transparent);
+  animation:bgPulse 12s ease-in-out infinite alternate;}
+@keyframes bgPulse{0%{opacity:.8}100%{opacity:1;transform:scale(1.04);}}
 
-        /* Glass card */
-        .glass {
-            background: rgba(255,255,255,0.07);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 20px;
-        }
-        .glass-light {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 14px;
-        }
+/* Grid texture */
+.bg-layer::after{content:'';position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.015) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.015) 1px,transparent 1px);
+  background-size:40px 40px;}
 
-        /* Gradient text */
-        .grad-text {
-            background: linear-gradient(135deg, #f093fb, #f5576c, #fda085);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .grad-text-gold {
-            background: linear-gradient(135deg, #f6d365, #fda085);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
+/* ── Cards ── */
+.card{position:relative;z-index:1;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);border-radius:20px;
+  backdrop-filter:blur(20px);}
+.card-glow{box-shadow:0 0 40px rgba(111,63,245,.08),0 8px 32px rgba(0,0,0,.4);}
 
-        /* Buttons */
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none; color: white; font-weight: 800;
-            border-radius: 14px; padding: 14px;
-            transition: all 0.2s; cursor: pointer; width: 100%;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-        }
-        .btn-primary:active { transform: scale(0.97); opacity: 0.9; }
+/* ── Buttons ── */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;
+  font-family:'Space Grotesk',sans-serif;font-weight:700;border:none;
+  cursor:pointer;transition:all .2s cubic-bezier(.4,0,.2,1);
+  border-radius:14px;padding:14px;width:100%;color:#fff;position:relative;overflow:hidden;}
+.btn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:.2s;}
+.btn:active::after{background:rgba(255,255,255,.1);}
+.btn:active{transform:scale(.97);}
+.btn:hover{transform:translateY(-1px);}
 
-        .btn-green {
-            background: linear-gradient(135deg, #11998e, #38ef7d);
-        }
-        .btn-blue {
-            background: linear-gradient(135deg, #2980b9, #6dd5fa);
-        }
-        .btn-yellow {
-            background: linear-gradient(135deg, #f7971e, #ffd200);
-            color: #1a1a2e;
-        }
-        .btn-red {
-            background: linear-gradient(135deg, #eb3349, #f45c43);
-        }
-        .btn-disabled { opacity: 0.5; pointer-events: none; }
+.btn-play{background:linear-gradient(135deg,#7c3aed,#4f46e5);
+  box-shadow:0 4px 24px rgba(124,58,237,.4);font-size:1.1rem;}
+.btn-green{background:linear-gradient(135deg,#059669,#10b981);box-shadow:0 4px 16px rgba(16,185,129,.3);}
+.btn-blue{background:linear-gradient(135deg,#1d4ed8,#3b82f6);box-shadow:0 4px 16px rgba(59,130,246,.3);}
 
-        /* Inputs */
-        .form-input {
-            width: 100%; padding: 12px 16px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 12px; color: white; font-size: 14px;
-            outline: none; transition: border 0.2s;
-        }
-        .form-input:focus { border-color: rgba(150,100,255,0.6); }
-        .form-input::placeholder { color: rgba(255,255,255,0.35); }
+/* ── Inputs ── */
+.inp{width:100%;padding:13px 16px;background:rgba(0,0,0,.3);
+  border:1px solid rgba(255,255,255,.1);border-radius:12px;
+  color:#fff;font-family:'Space Grotesk',sans-serif;font-size:14px;outline:none;transition:.3s;}
+.inp:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.2);}
+.inp::placeholder{color:rgba(255,255,255,.25);}
 
-        /* Animations */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 600px; } }
+/* ── Balance ── */
+.bal-num{font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;
+  background:linear-gradient(135deg,#4ade80,#06b6d4);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
 
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        .pulse-anim { animation: pulse 2.5s infinite; }
-        .spin-anim { animation: spin 1s linear infinite; }
+/* ── Stats ── */
+.stat-box{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;padding:14px;text-align:center;}
+.stat-num{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;}
 
-        .slide-panel { overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease; max-height: 0; opacity: 0; }
-        .slide-panel.open { max-height: 700px; opacity: 1; }
+/* ── Panel slide ── */
+.panel{max-height:0;overflow:hidden;opacity:0;
+  transition:max-height .4s cubic-bezier(.4,0,.2,1),opacity .3s,margin .3s;pointer-events:none;}
+.panel.open{max-height:900px;opacity:1;margin-top:12px;pointer-events:auto;}
 
-        /* Spinner */
-        .spinner {
-            width: 20px; height: 20px;
-            border: 2px solid rgba(255,255,255,0.2);
-            border-top: 2px solid white;
-            border-radius: 50%;
-        }
+/* ── Rule cards ── */
+.rule-item{display:flex;flex-direction:column;align-items:center;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;padding:16px 10px;text-align:center;transition:.3s;}
+.rule-item:hover{background:rgba(255,255,255,.06);transform:translateY(-2px);}
 
-        /* Balance glow */
-        .balance-glow {
-            text-shadow: 0 0 20px rgba(100,255,150,0.5);
-        }
+/* ── Toast ── */
+#toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);
+  z-index:999;transition:all .4s cubic-bezier(.68,-.55,.265,1.55);opacity:0;}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.toast-inner{padding:10px 22px;border-radius:100px;font-size:13px;font-weight:600;
+  backdrop-filter:blur(16px);display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.t-ok{background:rgba(16,185,129,.9);border:1px solid #34d399;}
+.t-err{background:rgba(239,68,68,.9);border:1px solid #f87171;}
 
-        /* Toast */
-        #toast {
-            position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-            z-index: 1000; transition: all 0.3s;
-        }
-        .toast-box {
-            padding: 10px 20px; border-radius: 10px;
-            font-size: 13px; font-weight: 700;
-            white-space: nowrap; max-width: 90vw;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-        }
-        .toast-success { background: linear-gradient(135deg, #11998e, #38ef7d); color: #fff; }
-        .toast-error { background: linear-gradient(135deg, #eb3349, #f45c43); color: #fff; }
-        .toast-info { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+/* ── Loading ── */
+#loader{position:fixed;inset:0;background:#080810;z-index:100;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.loader-ring{width:48px;height:48px;border:3px solid rgba(255,255,255,.1);
+  border-top-color:#7c3aed;border-radius:50%;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-        /* Stats row */
-        .stat-card {
-            flex: 1; text-align: center; padding: 10px 6px;
-        }
+/* ── Fade In ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .5s cubic-bezier(.16,1,.3,1) both;}
+.d1{animation-delay:.05s}.d2{animation-delay:.1s}.d3{animation-delay:.15s}.d4{animation-delay:.2s}
 
-        /* Divider */
-        .divider { height: 1px; background: rgba(255,255,255,0.08); margin: 12px 0; }
+/* ── Spinner ── */
+.spin-sm{width:18px;height:18px;border:2px solid rgba(255,255,255,.2);
+  border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:none;}
 
-        /* KPay info box */
-        .kpay-box {
-            background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,150,50,0.08));
-            border: 1px solid rgba(255,215,0,0.2);
-            border-radius: 12px; padding: 14px; margin-bottom: 12px;
-        }
+/* ── KPay box ── */
+.kpay-box{background:rgba(0,0,0,.3);border:1px solid rgba(245,158,11,.2);border-radius:14px;padding:16px;}
+.kpay-row{display:flex;justify-content:space-between;align-items:center;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;padding:12px 14px;}
+.copy-btn{background:rgba(245,158,11,.2);color:#fbbf24;border:none;
+  padding:6px 14px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;transition:.2s;}
+.copy-btn:active{transform:scale(.95);}
 
-        /* Rule item */
-        .rule-item {
-            display: flex; align-items: flex-start; gap: 8px;
-            padding: 6px 0;
-        }
+/* ── Referral ── */
+.ref-box{position:relative;}
+.ref-inp{padding-right:80px;font-size:13px;color:#a78bfa;}
+.ref-send{position:absolute;right:6px;top:6px;bottom:6px;
+  background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;
+  border:none;padding:0 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;transition:.2s;}
+.ref-send:active{transform:scale(.95);}
 
-        /* Loading overlay */
-        #loadingOverlay {
-            position: fixed; inset: 0;
-            background: rgba(15,12,41,0.95);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            z-index: 999;
-        }
-
-        /* Number counter animation */
-        .counter-animate { transition: all 0.5s ease; }
-    </style>
+/* ── Section title ── */
+.sec-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;
+  color:#fff;display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+</style>
 </head>
 <body>
-    <div class="bg-anim"></div>
-    
-    <!-- Toast -->
-    <div id="toast" style="display:none;">
-        <div class="toast-box" id="toastBox"></div>
+<div class="bg-layer"></div>
+
+<!-- Loading -->
+<div id="loader">
+  <div style="font-family:'Syne',sans-serif;font-size:1.8rem;font-weight:800;color:#fff;margin-bottom:8px;">TicToeTic</div>
+  <div style="color:rgba(255,255,255,.4);font-size:13px;margin-bottom:24px;">Loading...</div>
+  <div class="loader-ring"></div>
+</div>
+
+<!-- Toast -->
+<div id="toast"><div class="toast-inner" id="toastInner"></div></div>
+
+<div id="app" style="display:none;max-width:440px;margin:0 auto;padding:14px 14px 40px;">
+
+  <!-- Header -->
+  <div class="card card-glow p-4 mb-3 fade-up">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:#fff;">🎮 TicToeTic</div>
+        <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:2px;">မင်္ဂလာပါ, <span id="uname" style="color:#a78bfa;"></span></div>
+      </div>
+      <button onclick="refreshBalance()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px;cursor:pointer;transition:.2s;" id="refBtn">
+        <svg width="18" height="18" fill="none" stroke="#4ade80" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      </button>
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay">
-        <div class="text-4xl mb-4">🎮</div>
-        <div class="text-white font-bold text-xl mb-2">TicToeTic</div>
-        <div class="text-purple-300 text-sm mb-6">Loading...</div>
-        <div class="spinner spin-anim"></div>
+    <!-- Balance -->
+    <div style="background:rgba(0,0,0,.2);border:1px solid rgba(74,222,128,.1);border-radius:14px;padding:20px 18px;margin:14px 0;">
+      <div style="font-size:11px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">💰 လက်ကျန်ငွေ</div>
+      <div style="display:flex;align-items:baseline;gap:8px;">
+        <span class="bal-num" id="balNum">0</span>
+        <span style="color:#4ade80;font-weight:700;">MMK</span>
+      </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="max-w-md mx-auto p-4 pb-8" style="display:none;" id="mainContent">
-        
-        <!-- Header -->
-        <div class="glass p-5 mb-4 fade-in">
-            <div class="flex items-center justify-between mb-4">
-                <div>
-                    <h1 class="text-2xl font-black text-white">🎮 TicToeTic</h1>
-                    <p class="text-sm" style="color:rgba(255,255,255,0.5);">5x5 Tic-Tac-Toe • Win Real Money</p>
-                </div>
-                <div class="text-right">
-                    <div class="text-xs mb-1" style="color:rgba(255,255,255,0.5);">အသုံးပြုသူ</div>
-                    <div id="username" class="text-white font-bold text-sm">-</div>
-                </div>
-            </div>
-
-            <!-- Balance Card -->
-            <div class="glass-light p-4 mb-4" style="background:rgba(100,255,150,0.05); border-color:rgba(100,255,150,0.15);">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-xs mb-1" style="color:rgba(255,255,255,0.5);">💰 လက်ကျန်ငွေ</div>
-                        <div class="flex items-baseline gap-2">
-                            <span id="balance" class="text-3xl font-black text-green-400 balance-glow counter-animate">0</span>
-                            <span class="text-green-400 font-bold">MMK</span>
-                        </div>
-                    </div>
-                    <button onclick="refreshBalance()" class="p-2 rounded-xl" style="background:rgba(100,255,150,0.1);">
-                        <span id="refreshIcon">🔄</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Stats -->
-            <div class="flex gap-2 mb-4">
-                <div class="stat-card glass-light">
-                    <div class="text-lg font-black text-white" id="statGames">0</div>
-                    <div class="text-xs" style="color:rgba(255,255,255,0.5);">ကစားမှု</div>
-                </div>
-                <div class="stat-card glass-light">
-                    <div class="text-lg font-black text-green-400" id="statWins">0</div>
-                    <div class="text-xs" style="color:rgba(255,255,255,0.5);">နိုင်မှု</div>
-                </div>
-                <div class="stat-card glass-light">
-                    <div class="text-lg font-black text-red-400" id="statLosses">0</div>
-                    <div class="text-xs" style="color:rgba(255,255,255,0.5);">ရှုံးမှု</div>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <button id="depositBtn" class="btn-primary btn-green" onclick="togglePanel('depositPanel')">
-                    💰 ငွေဖြည့်
-                </button>
-                <button id="withdrawBtn" class="btn-primary btn-blue" onclick="togglePanel('withdrawPanel')">
-                    💸 ငွေထုတ်
-                </button>
-            </div>
-
-            <!-- Play Button -->
-            <a href="/play.html" class="btn-primary btn-yellow pulse-anim text-xl" style="text-decoration:none; display:flex;">
-                🎮 ကစားရန် (1000 MMK)
-            </a>
-        </div>
-
-        <!-- Deposit Panel -->
-        <div id="depositPanel" class="glass mb-4 slide-panel">
-            <div class="p-5">
-                <h3 class="text-white font-black text-lg mb-4">💰 ငွေဖြည့်ရန်</h3>
-                <div class="kpay-box">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="text-yellow-300 font-black">💳 KPay:</span>
-                        <span class="text-yellow-300 font-bold font-mono">09792310926</span>
-                        <button onclick="copyText('09792310926')" class="text-xs px-2 py-0.5 rounded-lg" style="background:rgba(255,215,0,0.2); color:#ffd700;">copy</button>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-yellow-300 font-black">👤 Name:</span>
-                        <span class="text-yellow-300 font-bold">Daw Mi Thaung</span>
-                    </div>
-                    <div class="text-xs mt-2" style="color:rgba(255,215,0,0.7);">* ငွေလွှဲပြီးမှ ဖောင်ဖြည့်ပါ</div>
-                </div>
-                <div class="flex flex-col gap-3">
-                    <input type="text" id="depositKpayName" class="form-input" placeholder="သင့် KPay Name (ဥပမာ - Mg Mg)">
-                    <input type="text" id="depositTxnId" class="form-input" placeholder="Transaction ID">
-                    <input type="number" id="depositAmount" class="form-input" placeholder="ပမာဏ (အနည်းဆုံး 1000 MMK)" min="1000">
-                    <button onclick="submitDeposit()" class="btn-primary btn-green">
-                        <span id="depositBtnText">✅ တောင်းဆိုမည်</span>
-                        <div class="spinner spin-anim" id="depositSpinner" style="display:none;"></div>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Withdraw Panel -->
-        <div id="withdrawPanel" class="glass mb-4 slide-panel">
-            <div class="p-5">
-                <h3 class="text-white font-black text-lg mb-4">💸 ငွေထုတ်ရန်</h3>
-                <div class="glass-light p-3 mb-3" style="background:rgba(100,150,255,0.05); border-color:rgba(100,150,255,0.2);">
-                    <div class="text-xs text-blue-300">• အနည်းဆုံး 3000 MMK မှ ထုတ်ယူနိုင်သည်</div>
-                    <div class="text-xs text-blue-300 mt-1">• စီမံခန့်ခွဲသူ အတည်ပြုမှ ၁ ရက်အတွင်း ပေးပို့မည်</div>
-                </div>
-                <div class="flex flex-col gap-3">
-                    <input type="text" id="withdrawKpayName" class="form-input" placeholder="သင့် KPay Name">
-                    <input type="text" id="withdrawKpayNumber" class="form-input" placeholder="KPay ဖုန်းနံပါတ် (09xxxxxxxxx)">
-                    <input type="number" id="withdrawAmount" class="form-input" placeholder="ပမာဏ (အနည်းဆုံး 3000 MMK)" min="3000">
-                    <button onclick="submitWithdraw()" class="btn-primary btn-blue">
-                        <span id="withdrawBtnText">💸 တောင်းဆိုမည်</span>
-                        <div class="spinner spin-anim" id="withdrawSpinner" style="display:none;"></div>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Referral Card -->
-        <div class="glass p-5 mb-4 fade-in">
-            <div class="flex items-center gap-2 mb-3">
-                <span class="text-xl">🔗</span>
-                <div>
-                    <h3 class="text-white font-black">မိတ်ဆွေဖိတ်ရန်</h3>
-                    <p class="text-xs" style="color:rgba(255,255,255,0.5);">မိတ်ဆွေ 1000 ဖြည့်တိုင်း 100 MMK ရမည်</p>
-                </div>
-            </div>
-            <div class="flex gap-2">
-                <input type="text" id="referralLink" readonly class="form-input text-xs" value="Loading..." style="flex:1;">
-                <button onclick="copyReferral()" id="copyBtn" class="btn-primary" style="width:auto; padding:12px 16px; border-radius:12px; background:linear-gradient(135deg,#667eea,#764ba2);">
-                    📋
-                </button>
-            </div>
-        </div>
-
-        <!-- Game Rules -->
-        <div class="glass p-5 mb-4 fade-in">
-            <h3 class="text-white font-black mb-3">📜 ဂိမ်းစည်းကမ်းများ</h3>
-            <div class="rule-item">
-                <span class="text-yellow-400">⚔️</span>
-                <span class="text-sm" style="color:rgba(255,255,255,0.8);">5x5 အကွက်တွင် ၄ ကွက်တန်းလျှင် အနိုင်ရသည်</span>
-            </div>
-            <div class="divider"></div>
-            <div class="rule-item">
-                <span class="text-yellow-400">💰</span>
-                <span class="text-sm" style="color:rgba(255,255,255,0.8);">တစ်ပွဲ ဝင်ကြေး ၁၀၀၀ MMK</span>
-            </div>
-            <div class="rule-item">
-                <span class="text-green-400">🏆</span>
-                <span class="text-sm" style="color:rgba(255,255,255,0.8);">အနိုင်ရသူ <strong class="text-green-400">1600 MMK</strong> ရမည်</span>
-            </div>
-            <div class="rule-item">
-                <span class="text-blue-400">🤝</span>
-                <span class="text-sm" style="color:rgba(255,255,255,0.8);">သရေကျလျှင် <strong class="text-blue-400">500 MMK</strong> စီ ပြန်ရမည်</span>
-            </div>
-            <div class="divider"></div>
-            <div class="rule-item">
-                <span class="text-red-400">⏱️</span>
-                <span class="text-sm" style="color:rgba(255,255,255,0.8);">တစ်လှည့်စီ <strong class="text-red-400">5 စက္ကန့်</strong> သာ ကြာမည်</span>
-            </div>
-            <div class="rule-item">
-                <span class="text-purple-400">🤖</span>
-                <span class="text-sm" style="color:rgba(255,255,255,0.8);">30 စက္ကန့် အတွင်း ကစားသူ မတွေ့လျှင် AI နှင့် ကစားမည်</span>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="text-center text-xs pb-4" style="color:rgba(255,255,255,0.3);">
-            © 2024 TicToeTic • Telegram Mini App
-        </div>
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;">
+      <div class="stat-box">
+        <div class="stat-num" style="color:#fff;" id="sGames">0</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-top:2px;">ကစားမှု</div>
+      </div>
+      <div class="stat-box" style="border-color:rgba(74,222,128,.15);">
+        <div class="stat-num" style="color:#4ade80;" id="sWins">0</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-top:2px;">နိုင်မှု</div>
+      </div>
+      <div class="stat-box" style="border-color:rgba(239,68,68,.15);">
+        <div class="stat-num" style="color:#f87171;" id="sLoss">0</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-top:2px;">ရှုံးမှု</div>
+      </div>
     </div>
 
-    <script>
-        const tg = window.Telegram?.WebApp;
-        if (tg) { tg.expand(); tg.ready(); }
+    <!-- Action Buttons -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <button class="btn btn-green" onclick="togglePanel('dep')">💰 ငွေဖြည့်ရန်</button>
+      <button class="btn btn-blue" onclick="togglePanel('wd')">💸 ငွေထုတ်ရန်</button>
+    </div>
+    <a href="/play.html" class="btn btn-play" style="text-decoration:none;font-size:1.05rem;">🎮 ယခုပင် ကစားမည်</a>
+  </div>
 
-        const API_URL = 'https://tiktocbackend.onrender.com';
-        let user = null;
+  <!-- Deposit Panel -->
+  <div id="dep" class="panel">
+    <div class="card p-4 fade-up">
+      <div class="sec-title">💰 ငွေဖြည့်သွင်းရန်</div>
+      <div class="kpay-box mb-3">
+        <div style="font-size:11px;color:#fbbf24;font-weight:700;margin-bottom:10px;">📱 အောက်ပါ KPay သို့ ငွေလွှဲပါ</div>
+        <div class="kpay-row mb-2">
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:3px;">KPay နံပါတ်</div>
+            <div style="font-family:monospace;font-size:1.1rem;font-weight:700;color:#fff;letter-spacing:.05em;">09792310926</div>
+          </div>
+          <button class="copy-btn" onclick="copyTxt('09792310926')">Copy</button>
+        </div>
+        <div class="kpay-row">
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:3px;">အကောင့်ပိုင်ရှင်</div>
+            <div style="font-weight:700;color:#fff;">Daw Mi Thaung</div>
+          </div>
+        </div>
+        <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:10px;margin-top:10px;font-size:12px;color:#fca5a5;text-align:center;">
+          ⚠️ ငွေလွှဲပြီးမှသာ အောက်ပါ Form ဖြည့်ပါ
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <input class="inp" id="dName" placeholder="သင့် KPay အမည် (ဥပမာ - Mg Mg)">
+        <input class="inp" id="dTxn" placeholder="Transaction ID">
+        <input class="inp" id="dAmt" type="number" placeholder="ငွေပမာဏ (အနည်းဆုံး 1,000 MMK)" min="1000">
+        <button class="btn btn-green" onclick="submitDeposit()" id="dBtn">
+          <span id="dBtnTxt">အတည်ပြုမည်</span><div class="spin-sm" id="dSpin"></div>
+        </button>
+      </div>
+    </div>
+  </div>
 
-        // ====== Toast ======
-        let toastTimer;
-        function showToast(msg, type = 'info', duration = 3000) {
-            const toast = document.getElementById('toast');
-            const box = document.getElementById('toastBox');
-            box.textContent = msg;
-            box.className = `toast-box toast-${type}`;
-            toast.style.display = 'block';
-            clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => { toast.style.display = 'none'; }, duration);
-        }
+  <!-- Withdraw Panel -->
+  <div id="wd" class="panel">
+    <div class="card p-4 fade-up">
+      <div class="sec-title">💸 ငွေထုတ်ယူရန်</div>
+      <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:12px;margin-bottom:14px;">
+        <div style="font-size:13px;color:#93c5fd;line-height:1.7;">
+          • အနည်းဆုံး <strong style="color:#fff;">3,000 MMK</strong> မှ ထုတ်ယူနိုင်ပါသည်<br>
+          • Admin စစ်ဆေးပြီး ၂၄ နာရီအတွင်း လွှဲပေးပါမည်
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <input class="inp" id="wName" placeholder="ငွေလက်ခံမည့် KPay အမည်">
+        <input class="inp" id="wNum" placeholder="KPay ဖုန်းနံပါတ် (09xxxxxxxxx)">
+        <input class="inp" id="wAmt" type="number" placeholder="ထုတ်ယူမည့် ပမာဏ (အနည်းဆုံး 3,000)" min="3000">
+        <button class="btn btn-blue" onclick="submitWithdraw()" id="wBtn">
+          <span id="wBtnTxt">ထုတ်ယူမည်</span><div class="spin-sm" id="wSpin"></div>
+        </button>
+      </div>
+    </div>
+  </div>
 
-        // ====== Panel Toggle ======
-        function togglePanel(id) {
-            const panels = ['depositPanel', 'withdrawPanel'];
-            panels.forEach(p => {
-                const el = document.getElementById(p);
-                if (p === id) {
-                    el.classList.toggle('open');
-                } else {
-                    el.classList.remove('open');
-                }
-            });
-        }
+  <!-- Referral -->
+  <div class="card card-glow p-4 mb-3 d2 fade-up" style="margin-top:12px;">
+    <div class="sec-title">🔗 သူငယ်ချင်းများဖိတ်ခေါ်ရန်</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:14px;line-height:1.6;">
+      သူငယ်ချင်း တစ်ယောက်မှ <strong style="color:#fff;">1,000 MMK</strong> ဖြည့်တိုင်း သင် <strong style="color:#4ade80;">100 MMK</strong> ရမည်!
+    </div>
+    <div class="ref-box">
+      <input class="inp ref-inp" id="refLink" readonly value="Loading...">
+      <button class="ref-send" id="sendBtn" onclick="sendReferral()">📤 Send</button>
+    </div>
+  </div>
 
-        // ====== Copy ======
-        function copyText(text) {
-            navigator.clipboard?.writeText(text).catch(() => {});
-            showToast('✅ Copied!', 'success', 1500);
-        }
+  <!-- Rules -->
+  <div class="card p-4 mb-3 d3 fade-up">
+    <div class="sec-title">📜 ဂိမ်းစည်းမျဉ်းများ</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div class="rule-item">
+        <div style="font-size:1.6rem;margin-bottom:8px;">🎟️</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:4px;">ပွဲဝင်ကြေး</div>
+        <div style="font-weight:800;color:#fff;font-size:.95rem;">1,000 MMK</div>
+      </div>
+      <div class="rule-item" style="border-color:rgba(74,222,128,.15);background:rgba(74,222,128,.04);">
+        <div style="font-size:1.6rem;margin-bottom:8px;">🏆</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:4px;">အနိုင်ရမည်</div>
+        <div style="font-weight:800;color:#4ade80;font-size:.95rem;">1,600 MMK</div>
+      </div>
+      <div class="rule-item" style="border-color:rgba(96,165,250,.15);background:rgba(96,165,250,.04);">
+        <div style="font-size:1.6rem;margin-bottom:8px;">🤝</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:4px;">သရေကျမှု</div>
+        <div style="font-weight:800;color:#60a5fa;font-size:.95rem;">500 MMK ပြန်ရ</div>
+      </div>
+      <div class="rule-item" style="border-color:rgba(251,191,36,.15);background:rgba(251,191,36,.04);">
+        <div style="font-size:1.6rem;margin-bottom:8px;">⏱️</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;margin-bottom:4px;">တစ်လှည့်ချိန်</div>
+        <div style="font-weight:800;color:#fbbf24;font-size:.95rem;">10 စက္ကန့်</div>
+      </div>
+    </div>
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:1.4rem;">⚔️</span>
+      <span style="font-size:13px;color:rgba(255,255,255,.6);">5×5 ကွက်တွင် <strong style="color:#fff;">4 ကွက်တန်း</strong> အောင်စီရမည်</span>
+    </div>
+  </div>
 
-        function copyReferral() {
-            const link = document.getElementById('referralLink').value;
-            if (link && link !== 'Loading...') {
-                navigator.clipboard?.writeText(link).catch(() => {});
-                const btn = document.getElementById('copyBtn');
-                btn.textContent = '✅';
-                setTimeout(() => btn.textContent = '📋', 2000);
-                if (tg?.showAlert) tg.showAlert('Referral link copied!');
-                else showToast('✅ Referral link copied!', 'success');
-            }
-        }
+  <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.15);padding-top:4px;">© 2024 TicToeTic</div>
+</div>
 
-        // ====== Auth ======
-        async function initAuth() {
-            try {
-                const initData = tg?.initData || '';
-                const body = initData ? { initData } : { telegramId: 12345 }; // dev fallback
+<script>
+const tg = window.Telegram?.WebApp;
+if(tg){tg.expand();tg.ready();}
 
-                const resp = await fetch(`${API_URL}/api/auth`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
+const API = 'https://tiktocbackend.onrender.com';
+const BOT = 'tictoe1_bot';
+let user = null;
+let toastTmr;
 
-                if (!resp.ok) {
-                    const err = await resp.json().catch(() => ({}));
-                    throw new Error(err.error || `HTTP ${resp.status}`);
-                }
+function toast(msg, ok=true){
+  const el = document.getElementById('toast');
+  const inn = document.getElementById('toastInner');
+  inn.textContent = (ok ? '✅ ' : '⚠️ ') + msg;
+  inn.className = 'toast-inner ' + (ok ? 't-ok' : 't-err');
+  el.classList.add('show');
+  clearTimeout(toastTmr);
+  toastTmr = setTimeout(()=>el.classList.remove('show'), 3000);
+}
 
-                user = await resp.json();
-                updateUI();
-                hideLoading();
-            } catch (err) {
-                console.error('Auth error:', err);
-                hideLoading();
-                showToast('⚠️ ဆာဗာနှင့် ချိတ်ဆက်မှု ပျက်ကွက်သည်: ' + err.message, 'error', 5000);
-                // Show UI anyway with error state
-                document.getElementById('username').textContent = 'Error';
-                document.getElementById('mainContent').style.display = 'block';
-            }
-        }
+function togglePanel(id){
+  const ids = ['dep','wd'];
+  ids.forEach(i=>{
+    const el = document.getElementById(i);
+    if(i===id) el.classList.toggle('open');
+    else el.classList.remove('open');
+  });
+}
 
-        function updateUI() {
-            if (!user) return;
-            document.getElementById('username').textContent = user.username || user.firstName || `User${user.telegramId}`;
-            document.getElementById('balance').textContent = (user.balance || 0).toLocaleString();
-            document.getElementById('statGames').textContent = user.totalGames || 0;
-            document.getElementById('statWins').textContent = user.wins || 0;
-            document.getElementById('statLosses').textContent = user.losses || 0;
+function copyTxt(txt){
+  navigator.clipboard?.writeText(txt);
+  if(tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  toast('ကူးယူပြီးပါပြီ',true);
+}
 
-            const botUsername = 'tictoe1_bot';
-            document.getElementById('referralLink').value = `https://t.me/${botUsername}?start=${user.referralCode}`;
-        }
+function sendReferral(){
+  const link = document.getElementById('refLink').value;
+  if(!link || link==='Loading...') return;
+  // Use Telegram share (send to contacts)
+  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('🎮 TicToeTic ကစားပြီး ငွေရှာကြစို့!')}`;
+  if(tg?.openTelegramLink) tg.openTelegramLink(shareUrl);
+  else window.open(shareUrl,'_blank');
+}
 
-        function hideLoading() {
-            document.getElementById('loadingOverlay').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'block';
-        }
+function animateNum(id, end, dur=800){
+  const el = document.getElementById(id);
+  const start = parseInt(el.textContent.replace(/,/g,'')) || 0;
+  if(start===end){el.textContent=end.toLocaleString();return;}
+  let t0=null;
+  const step=ts=>{
+    if(!t0)t0=ts;
+    const p=Math.min((ts-t0)/dur,1);
+    el.textContent=Math.floor(p*(end-start)+start).toLocaleString();
+    if(p<1)requestAnimationFrame(step);
+    else el.textContent=end.toLocaleString();
+  };
+  requestAnimationFrame(step);
+}
 
-        // ====== Refresh Balance ======
-        async function refreshBalance() {
-            if (!user) return;
-            document.getElementById('refreshIcon').className = 'spin-anim';
-            document.getElementById('refreshIcon').textContent = '⟳';
-            try {
-                const resp = await fetch(`${API_URL}/api/user/${user.telegramId}`);
-                const data = await resp.json();
-                if (data.balance !== undefined) {
-                    user.balance = data.balance;
-                    user.totalGames = data.totalGames || user.totalGames;
-                    user.wins = data.wins || user.wins;
-                    user.losses = data.losses || user.losses;
-                    updateUI();
-                    showToast('✅ Balance updated', 'success', 1500);
-                }
-            } catch (e) {
-                showToast('⚠️ Refresh failed', 'error');
-            }
-            document.getElementById('refreshIcon').className = '';
-            document.getElementById('refreshIcon').textContent = '🔄';
-        }
+async function init(){
+  try{
+    const initData = tg?.initData||'';
+    const body = initData?{initData}:{telegramId:12345};
+    const r = await fetch(`${API}/api/auth`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok) throw new Error(r.status);
+    user = await r.json();
+    updateUI();
+    setTimeout(()=>hideLoader(), 500);
+  }catch(e){
+    console.error(e);
+    setTimeout(()=>hideLoader(), 500);
+    toast('ဆာဗာ ချိတ်ဆက်မှု ပြဿနာ',false);
+  }
+}
 
-        // ====== Deposit ======
-        async function submitDeposit() {
-            const kpayName = document.getElementById('depositKpayName').value.trim();
-            const txnId = document.getElementById('depositTxnId').value.trim();
-            const amount = parseInt(document.getElementById('depositAmount').value);
+function updateUI(){
+  if(!user)return;
+  document.getElementById('uname').textContent = user.firstName||user.username||`User${user.telegramId}`;
+  animateNum('balNum', user.balance||0);
+  document.getElementById('sGames').textContent = user.totalGames||0;
+  document.getElementById('sWins').textContent  = user.wins||0;
+  document.getElementById('sLoss').textContent  = user.losses||0;
+  document.getElementById('refLink').value = `https://t.me/${BOT}?start=${user.referralCode}`;
+}
 
-            if (!kpayName) return showToast('KPay Name ဖြည့်ပါ', 'error');
-            if (!txnId) return showToast('Transaction ID ဖြည့်ပါ', 'error');
-            if (!amount || amount < 1000) return showToast('အနည်းဆုံး 1000 MMK ဖြည့်ပါ', 'error');
-            if (!user) return showToast('ဦးစွာ Login ဝင်ပါ', 'error');
+function hideLoader(){
+  const l = document.getElementById('loader');
+  l.style.transition='opacity .3s';l.style.opacity='0';
+  setTimeout(()=>{l.style.display='none';document.getElementById('app').style.display='block';},300);
+}
 
-            setLoading('deposit', true);
-            try {
-                const resp = await fetch(`${API_URL}/api/deposit`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ telegramId: user.telegramId, kpayName, transactionId: txnId, amount })
-                });
-                const result = await resp.json();
-                if (result.success) {
-                    showToast('✅ တောင်းဆိုမှု အောင်မြင်ပါသည်! Admin အတည်ပြုရန် စောင့်ပါ', 'success', 4000);
-                    document.getElementById('depositKpayName').value = '';
-                    document.getElementById('depositTxnId').value = '';
-                    document.getElementById('depositAmount').value = '';
-                    togglePanel('depositPanel');
-                } else {
-                    showToast('❌ ' + (result.error || 'Error occurred'), 'error');
-                }
-            } catch (e) {
-                showToast('❌ ဆာဗာ ချိတ်ဆက်မှု ပျက်ကွက်သည်', 'error');
-            }
-            setLoading('deposit', false);
-        }
+async function refreshBalance(){
+  if(!user)return;
+  const btn=document.getElementById('refBtn');
+  btn.style.opacity='.5';
+  try{
+    const r=await fetch(`${API}/api/user/${user.telegramId}`);
+    const d=await r.json();
+    if(d.balance!==undefined){
+      const old=user.balance;
+      user={...user,...d};
+      animateNum('balNum',d.balance);
+      document.getElementById('sGames').textContent=d.totalGames||user.totalGames;
+      document.getElementById('sWins').textContent=d.wins||user.wins;
+      document.getElementById('sLoss').textContent=d.losses||user.losses;
+      toast('လက်ကျန်ငွေ အသစ်ပြန်တင်ပြီ',true);
+    }
+  }catch(e){toast('ချိတ်ဆက်မှု ပြဿနာ',false);}
+  btn.style.opacity='1';
+}
 
-        // ====== Withdraw ======
-        async function submitWithdraw() {
-            const kpayName = document.getElementById('withdrawKpayName').value.trim();
-            const kpayNumber = document.getElementById('withdrawKpayNumber').value.trim();
-            const amount = parseInt(document.getElementById('withdrawAmount').value);
+function setLoad(type,on){
+  document.getElementById(type+'BtnTxt').style.display=on?'none':'inline';
+  document.getElementById(type+'Spin').style.display=on?'inline-block':'none';
+}
 
-            if (!kpayName) return showToast('KPay Name ဖြည့်ပါ', 'error');
-            if (!kpayNumber) return showToast('KPay ဖုန်းနံပါတ် ဖြည့်ပါ', 'error');
-            if (!amount || amount < 3000) return showToast('အနည်းဆုံး 3000 MMK ထုတ်ယူနိုင်သည်', 'error');
-            if (!user || amount > user.balance) return showToast('လက်ကျန်ငွေ မလုံလောက်ပါ', 'error');
+async function submitDeposit(){
+  const name=document.getElementById('dName').value.trim();
+  const txn=document.getElementById('dTxn').value.trim();
+  const amt=parseInt(document.getElementById('dAmt').value);
+  if(!name)return toast('KPay အမည် ဖြည့်ပါ',false);
+  if(!txn)return toast('Transaction ID ဖြည့်ပါ',false);
+  if(!amt||amt<1000)return toast('အနည်းဆုံး 1,000 MMK ဖြည့်ပါ',false);
+  if(!user)return toast('Login ဝင်ပါ',false);
+  setLoad('d',true);
+  try{
+    const r=await fetch(`${API}/api/deposit`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({telegramId:user.telegramId,kpayName:name,transactionId:txn,amount:amt})});
+    const res=await r.json();
+    if(res.success){
+      toast('တောင်းဆိုမှု အောင်မြင်ပါသည်! Admin စစ်ဆေးနေပါသည်',true);
+      document.getElementById('dName').value='';
+      document.getElementById('dTxn').value='';
+      document.getElementById('dAmt').value='';
+      togglePanel('dep');
+    }else toast(res.error||'Error',false);
+  }catch(e){toast('ဆာဗာ ချိတ်ဆက်မှု ပြဿနာ',false);}
+  setLoad('d',false);
+}
 
-            setLoading('withdraw', true);
-            try {
-                const resp = await fetch(`${API_URL}/api/withdraw`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ telegramId: user.telegramId, kpayName, kpayNumber, amount })
-                });
-                const result = await resp.json();
-                if (result.success) {
-                    showToast('✅ တောင်းဆိုမှု အောင်မြင်ပါသည်! Admin အတည်ပြုရန် စောင့်ပါ', 'success', 4000);
-                    document.getElementById('withdrawKpayName').value = '';
-                    document.getElementById('withdrawKpayNumber').value = '';
-                    document.getElementById('withdrawAmount').value = '';
-                    togglePanel('withdrawPanel');
-                } else {
-                    showToast('❌ ' + (result.error || 'Error occurred'), 'error');
-                }
-            } catch (e) {
-                showToast('❌ ဆာဗာ ချိတ်ဆက်မှု ပျက်ကွက်သည်', 'error');
-            }
-            setLoading('withdraw', false);
-        }
+async function submitWithdraw(){
+  const name=document.getElementById('wName').value.trim();
+  const num=document.getElementById('wNum').value.trim();
+  const amt=parseInt(document.getElementById('wAmt').value);
+  if(!name)return toast('KPay အမည် ဖြည့်ပါ',false);
+  if(!num)return toast('KPay ဖုန်းနံပါတ် ဖြည့်ပါ',false);
+  if(!amt||amt<3000)return toast('အနည်းဆုံး 3,000 MMK ဖြည့်ပါ',false);
+  if(!user||amt>user.balance)return toast('လက်ကျန်ငွေ မလုံလောက်ပါ',false);
+  setLoad('w',true);
+  try{
+    const r=await fetch(`${API}/api/withdraw`,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({telegramId:user.telegramId,kpayName:name,kpayNumber:num,amount:amt})});
+    const res=await r.json();
+    if(res.success){
+      toast('တောင်းဆိုမှု အောင်မြင်ပါသည်! Admin စစ်ဆေးနေပါသည်',true);
+      user.balance=res.newBalance;
+      animateNum('balNum',res.newBalance);
+      document.getElementById('wName').value='';
+      document.getElementById('wNum').value='';
+      document.getElementById('wAmt').value='';
+      togglePanel('wd');
+    }else toast(res.error||'Error',false);
+  }catch(e){toast('ဆာဗာ ချိတ်ဆက်မှု ပြဿနာ',false);}
+  setLoad('w',false);
+}
 
-        function setLoading(type, loading) {
-            const btn = document.getElementById(`${type}BtnText`);
-            const spinner = document.getElementById(`${type}Spinner`);
-            if (loading) {
-                btn.style.display = 'none';
-                spinner.style.display = 'inline-block';
-            } else {
-                btn.style.display = 'inline';
-                spinner.style.display = 'none';
-            }
-        }
+// Auto refresh every 60s
+setInterval(async()=>{
+  if(!user?.telegramId||document.visibilityState!=='visible')return;
+  try{
+    const r=await fetch(`${API}/api/user/${user.telegramId}`);
+    const d=await r.json();
+    if(d.balance!==undefined&&d.balance!==user.balance){
+      animateNum('balNum',d.balance);
+      user.balance=d.balance;
+    }
+  }catch(e){}
+},60000);
 
-        // Auto-refresh every 60s
-        setInterval(async () => {
-            if (user?.telegramId && document.visibilityState === 'visible') {
-                try {
-                    const r = await fetch(`${API_URL}/api/user/${user.telegramId}`);
-                    const d = await r.json();
-                    if (d.balance !== undefined) {
-                        user.balance = d.balance;
-                        document.getElementById('balance').textContent = d.balance.toLocaleString();
-                    }
-                } catch (e) {}
-            }
-        }, 60000);
-
-        // Init
-        initAuth();
-    </script>
+window.addEventListener('DOMContentLoaded',init);
+</script>
 </body>
 </html>
