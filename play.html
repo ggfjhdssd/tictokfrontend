@@ -1,558 +1,644 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="my">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TicToeTic - Play Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TicToeTic - Play</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        * { font-family: 'Nunito', sans-serif; box-sizing: border-box; }
+        body { background: #0f0c29; min-height: 100vh; overflow-x: hidden; }
+        .bg-anim {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            position: fixed; inset: 0; z-index: -1;
         }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        .glass {
+            background: rgba(255,255,255,0.07);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 20px;
         }
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
+        .glass-light {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
         }
-        .animate-pulse {
-            animation: pulse 1.5s infinite;
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white; font-weight: 800; border-radius: 14px;
+            padding: 14px; width: 100%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: all 0.2s; border: none;
         }
-        .animate-spin {
-            animation: spin 1s linear infinite;
-        }
-        .animate-bounce {
-            animation: bounce 1s infinite;
-        }
+        .btn-primary:active { transform: scale(0.97); }
+        .btn-green { background: linear-gradient(135deg, #11998e, #38ef7d); }
+        .btn-yellow { background: linear-gradient(135deg, #f7971e, #ffd200); color: #1a1a2e; }
+        .btn-red { background: linear-gradient(135deg, #eb3349, #f45c43); }
+
+        /* Cell styles */
         .cell {
-            transition: all 0.2s;
             aspect-ratio: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            font-weight: bold;
-            border-radius: 0.75rem;
-            background: rgba(255,255,255,0.1);
-            border: 2px solid rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem; font-weight: 900;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.06);
+            border: 2px solid rgba(255,255,255,0.12);
             cursor: pointer;
+            transition: all 0.15s;
+            user-select: none; -webkit-tap-highlight-color: transparent;
         }
-        .cell:hover:not(.disabled):not(.cell-x):not(.cell-o) {
+        .cell:hover:not(.taken):not(.disabled) {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.3);
             transform: scale(1.05);
-            background: rgba(255,255,255,0.2);
         }
-        .cell-x {
-            color: #60A5FA;
-            text-shadow: 0 0 15px #3B82F6;
-            background: rgba(59, 130, 246, 0.2);
-            border-color: #3B82F6;
+        .cell:active:not(.taken):not(.disabled) { transform: scale(0.95); }
+        .cell.taken { cursor: default; }
+        .cell.x {
+            color: #60a5fa;
+            background: rgba(59,130,246,0.15);
+            border-color: rgba(59,130,246,0.4);
+            text-shadow: 0 0 10px rgba(59,130,246,0.6);
         }
-        .cell-o {
-            color: #F87171;
-            text-shadow: 0 0 15px #EF4444;
-            background: rgba(239, 68, 68, 0.2);
-            border-color: #EF4444;
+        .cell.o {
+            color: #f87171;
+            background: rgba(239,68,68,0.15);
+            border-color: rgba(239,68,68,0.4);
+            text-shadow: 0 0 10px rgba(239,68,68,0.6);
         }
-        .disabled {
-            cursor: not-allowed;
-            opacity: 0.7;
+        .cell.win-cell {
+            animation: winPulse 0.5s ease infinite alternate;
         }
-        .timer-ring-bg {
-            stroke: rgba(255,255,255,0.2);
+        @keyframes winPulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
         }
-        .timer-ring-fill {
-            transition: stroke-dashoffset 0.1s linear;
-            stroke: #FBBF24;
+        .cell.disabled { cursor: not-allowed; opacity: 0.6; }
+        .cell.my-turn:not(.taken) {
+            border-color: rgba(255,215,0,0.3);
         }
-        .timer-ring-fill.warning {
-            stroke: #F87171;
+
+        /* Timer ring */
+        .timer-wrap { position: relative; width: 80px; height: 80px; }
+        .timer-wrap svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+        .timer-track { stroke: rgba(255,255,255,0.1); fill: none; stroke-width: 5; }
+        .timer-fill { fill: none; stroke-width: 5; stroke-linecap: round;
+            stroke-dasharray: 220; stroke-dashoffset: 0;
+            transition: stroke-dashoffset 0.5s linear, stroke 0.5s;
         }
-        .loading-spinner {
-            border: 4px solid rgba(255,255,255,0.3);
+        .timer-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem; font-weight: 900; color: white; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        .pop { animation: pop 0.3s ease-out; }
+        .slide-up { animation: slideUp 0.4s ease-out; }
+        .spin-anim { animation: spin 1s linear infinite; }
+        .pulse-anim { animation: pulse 1.5s infinite; }
+
+        .spinner {
+            width: 20px; height: 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top: 2px solid white;
             border-radius: 50%;
-            border-top: 4px solid white;
-            width: 48px;
-            height: 48px;
-            animation: spin 1s linear infinite;
+            display: inline-block;
         }
+
+        /* Status badge */
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: 20px;
+            font-size: 13px; font-weight: 700;
+        }
+        .badge-blue { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; }
+        .badge-green { background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.3); color: #6ee7b7; }
+        .badge-yellow { background: rgba(251,191,36,0.15); border: 1px solid rgba(251,191,36,0.3); color: #fde68a; }
+        .badge-red { background: rgba(248,113,113,0.15); border: 1px solid rgba(248,113,113,0.3); color: #fca5a5; }
+        .badge-purple { background: rgba(167,139,250,0.15); border: 1px solid rgba(167,139,250,0.3); color: #c4b5fd; }
+
+        /* Loading dots */
+        .dot-pulse { display: inline-flex; gap: 4px; align-items: center; }
+        .dot-pulse span {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #c4b5fd; animation: dotPulse 1.5s infinite;
+        }
+        .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+        .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes dotPulse { 0%,100%{transform:scale(1);opacity:0.5} 50%{transform:scale(1.4);opacity:1} }
+
+        /* Result overlay */
+        #resultOverlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            display: none; align-items: center; justify-content: center;
+            z-index: 100;
+        }
+        .result-card {
+            background: linear-gradient(135deg, #1a1a2e, #302b63);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 24px; padding: 32px 24px; text-align: center;
+            max-width: 320px; width: 90%;
+        }
+        .result-emoji { font-size: 4rem; margin-bottom: 12px; }
+        .result-title { font-size: 1.5rem; font-weight: 900; margin-bottom: 8px; }
+        .result-subtitle { font-size: 0.85rem; opacity: 0.7; margin-bottom: 24px; }
     </style>
 </head>
-<body class="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 min-h-screen p-4">
-    <div class="max-w-md mx-auto">
-        <!-- Game Header -->
-        <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-6 mb-4 border border-white/20">
-            <!-- Top Bar -->
-            <div class="flex items-center justify-between mb-6">
-                <button onclick="window.location.href='/index.html'" class="text-white/70 hover:text-white transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
+<body>
+    <div class="bg-anim"></div>
+    
+    <!-- Result Overlay -->
+    <div id="resultOverlay">
+        <div class="result-card slide-up" id="resultCard">
+            <div class="result-emoji" id="resultEmoji">🏆</div>
+            <div class="result-title" id="resultTitle">You Win!</div>
+            <div class="result-subtitle" id="resultSubtitle">+1600 MMK</div>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="playAgain()" class="btn-primary btn-green" style="border-radius:12px; padding:12px;">
+                    🔄 ထပ်ကစား
                 </button>
-                
-                <h1 class="text-2xl font-bold text-white">🎮 TicToeTic</h1>
-                
-                <div class="flex items-center space-x-1">
-                    <span class="text-green-400 font-bold" id="balance">0</span>
-                    <span class="text-green-400 text-sm">MMK</span>
-                </div>
-            </div>
-
-            <!-- Connection Status -->
-            <div id="connectionStatus" class="hidden bg-yellow-500/20 border border-yellow-500 rounded-lg p-3 mb-4 text-yellow-300 text-sm text-center">
-                <span class="inline-flex items-center">
-                    <span class="loading-spinner w-4 h-4 mr-2"></span>
-                    ချိတ်ဆက်နေသည်...
-                </span>
-            </div>
-
-            <!-- Error Message -->
-            <div id="errorMessage" class="hidden bg-red-500/20 border border-red-500 rounded-lg p-3 mb-4 text-red-300 text-sm text-center">
-            </div>
-
-            <!-- Game Status -->
-            <div id="gameStatus" class="text-center text-white text-lg mb-4 bg-white/5 rounded-xl p-4">
-                ကစားရန် PLAY ကိုနှိပ်ပါ
-            </div>
-
-            <!-- Timer Display -->
-            <div id="timerContainer" class="hidden flex justify-center mb-6">
-                <div class="relative w-24 h-24">
-                    <svg class="w-24 h-24 transform -rotate-90">
-                        <circle cx="48" cy="48" r="44" stroke="currentColor" stroke-width="4" fill="transparent" class="timer-ring-bg"/>
-                        <circle id="timerCircle" cx="48" cy="48" r="44" stroke="currentColor" stroke-width="4" fill="transparent" 
-                                class="timer-ring-fill" stroke-dasharray="276.5" stroke-dashoffset="276.5"/>
-                    </svg>
-                    <div id="timerText" class="absolute inset-0 flex items-center justify-center text-white font-bold text-3xl">5</div>
-                </div>
-            </div>
-
-            <!-- Play Button -->
-            <button id="playBtn" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-5 px-4 rounded-xl mb-4 transition-all transform hover:scale-105 shadow-lg text-xl">
-                🎮 PLAY GAME (1000 MMK)
-            </button>
-
-            <!-- Waiting Animation -->
-            <div id="waitingAnimation" class="hidden text-center py-8">
-                <div class="flex justify-center mb-4">
-                    <div class="loading-spinner"></div>
-                </div>
-                <p class="text-white text-lg mb-2">ကစားသူရှာနေသည်...</p>
-                <p id="waitingTimer" class="text-purple-300 text-sm">ကျန်ချိန်: 30 စက္ကန့်</p>
-                <p class="text-purple-300 text-xs mt-4">အချိန်ကုန်လျှင် AI နှင့် ယှဉ်ပြိုင်ရမည်</p>
-            </div>
-
-            <!-- Game Board -->
-            <div id="gameBoard" class="hidden">
-                <div id="board" class="grid grid-cols-5 gap-2 mb-4">
-                    <!-- 5x5 cells will be generated by JS -->
-                </div>
-                
-                <!-- Turn Indicator -->
-                <div id="turnIndicator" class="text-center text-white mb-4 p-3 bg-white/5 rounded-xl text-lg">
-                </div>
-            </div>
-
-            <!-- Post Game Buttons -->
-            <div id="postGame" class="hidden grid grid-cols-2 gap-3">
-                <button id="playAgainBtn" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 rounded-lg transition-all">
-                    🔄 ထပ်ကစားမည်
-                </button>
-                <button id="exitBtn" class="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold py-3 rounded-lg transition-all">
-                    🏠 ထွက်မည်
+                <button onclick="goHome()" class="btn-primary btn-red" style="border-radius:12px; padding:12px;">
+                    🏠 ထွက်
                 </button>
             </div>
+        </div>
+    </div>
 
-            <!-- Game Result -->
-            <div id="resultMessage" class="hidden text-center text-xl font-bold mt-4 p-4 rounded-xl">
-            </div>
-            
-            <!-- Game Info -->
-            <div id="gameInfo" class="hidden text-center text-purple-300 text-sm mt-2">
-                <span id="opponentInfo"></span>
+    <!-- Main -->
+    <div class="max-w-md mx-auto p-3 pb-6">
+        
+        <!-- Header -->
+        <div class="glass p-4 mb-3 fade-in">
+            <div class="flex items-center justify-between">
+                <button onclick="goHome()" class="p-2 rounded-xl" style="background:rgba(255,255,255,0.08);">
+                    <svg width="20" height="20" fill="none" stroke="white" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <h1 class="text-white font-black text-xl">🎮 TicToeTic</h1>
+                <div class="text-right">
+                    <div class="text-xs mb-0.5" style="color:rgba(255,255,255,0.5);">လက်ကျန်</div>
+                    <div class="font-black text-green-400" id="balance">0 <span class="text-sm font-bold">MMK</span></div>
+                </div>
             </div>
         </div>
 
-        <!-- Game Rules (Quick Reminder) -->
-        <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-3 border border-white/10">
-            <p class="text-purple-300 text-xs text-center">
-                ⏱️ တစ်လှည့်စီ ၅ စက္ကန့် • ၄ ကွက်တန်းလျှင် အနိုင် • သရေလျှင် ၅၀၀ ပြန်အမ်း
+        <!-- Game Area -->
+        <div class="glass p-4 fade-in">
+            
+            <!-- State: Idle -->
+            <div id="stateIdle">
+                <div class="text-center py-4">
+                    <div class="text-5xl mb-4">🎮</div>
+                    <h2 class="text-white font-black text-xl mb-2">ကစားရန် အသင့်ဖြစ်ပြီ</h2>
+                    <p class="text-sm mb-6" style="color:rgba(255,255,255,0.5);">ကစားသူ ၂ ဦး ကစားနိုင်သည် • ၃၀ စက္ကန့်တွင် AI နှင့် ကစားမည်</p>
+                    <div class="glass-light p-4 mb-6 text-left">
+                        <div class="flex justify-between text-sm mb-2">
+                            <span style="color:rgba(255,255,255,0.6);">ဝင်ကြေး</span>
+                            <span class="text-white font-bold">1,000 MMK</span>
+                        </div>
+                        <div class="flex justify-between text-sm mb-2">
+                            <span style="color:rgba(255,255,255,0.6);">နိုင်ရင် ရမည်</span>
+                            <span class="text-green-400 font-bold">1,600 MMK</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span style="color:rgba(255,255,255,0.6);">သရေကျလျှင်</span>
+                            <span class="text-blue-400 font-bold">500 MMK ပြန်ရ</span>
+                        </div>
+                    </div>
+                    <button onclick="startSearch()" id="playBtn" class="btn-primary btn-yellow text-lg" style="border-radius:16px;">
+                        🎮 PLAY (1,000 MMK)
+                    </button>
+                </div>
+            </div>
+
+            <!-- State: Searching -->
+            <div id="stateSearching" style="display:none;">
+                <div class="text-center py-8">
+                    <div class="flex justify-center mb-4">
+                        <div style="width:60px;height:60px;border:4px solid rgba(255,255,255,0.1);border-top:4px solid #667eea;border-radius:50;" class="spin-anim"></div>
+                    </div>
+                    <h2 class="text-white font-black text-xl mb-2">ကစားသူ ရှာနေသည်</h2>
+                    <div class="dot-pulse justify-center mb-4">
+                        <span></span><span></span><span></span>
+                    </div>
+                    <div class="status-badge badge-yellow mx-auto mb-6" style="display:inline-flex;">
+                        ⏱️ ကျန်ချိန်: <span id="searchTimer" class="font-black">30</span> စက္ကန့်
+                    </div>
+                    <p class="text-sm mb-6" style="color:rgba(255,255,255,0.5);">အချိန်ကုန်လျှင် AI နှင့် ကစားမည်</p>
+                    <button onclick="cancelSearch()" class="btn-primary btn-red" style="border-radius:14px; max-width:200px; margin:0 auto;">
+                        ❌ ပယ်ဖျက်မည်
+                    </button>
+                </div>
+            </div>
+
+            <!-- State: Playing -->
+            <div id="statePlaying" style="display:none;">
+                
+                <!-- Players Bar -->
+                <div class="flex items-center justify-between mb-3">
+                    <div class="status-badge" id="player1Badge" style="background:rgba(59,130,246,0.15);border:1px solid rgba(59,130,246,0.3);color:#93c5fd;">
+                        ✖️ <span id="player1Name">You</span>
+                    </div>
+                    <div class="text-white font-black text-sm">VS</div>
+                    <div class="status-badge" id="player2Badge" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;">
+                        ⭕ <span id="player2Name">Opponent</span>
+                    </div>
+                </div>
+
+                <!-- Turn Status -->
+                <div id="turnStatus" class="text-center mb-3">
+                    <div class="status-badge badge-green mx-auto" style="display:inline-flex;">
+                        🎯 သင့်လှည့်
+                    </div>
+                </div>
+
+                <!-- Timer -->
+                <div class="flex justify-center mb-3" id="timerWrap">
+                    <div class="timer-wrap">
+                        <svg width="80" height="80" viewBox="0 0 80 80">
+                            <circle cx="40" cy="40" r="35" class="timer-track"/>
+                            <circle cx="40" cy="40" r="35" class="timer-fill" id="timerCircle" stroke="#fbbf24"/>
+                        </svg>
+                        <div class="timer-num" id="timerNum">5</div>
+                    </div>
+                </div>
+
+                <!-- Board -->
+                <div id="board" class="grid grid-cols-5 gap-1.5 mb-3">
+                    <!-- cells generated by JS -->
+                </div>
+
+                <!-- Game Info -->
+                <div id="gameInfo" class="text-center text-xs" style="color:rgba(255,255,255,0.4);">
+                    ⚔️ 4 ကွက်တန်းလျှင် အနိုင်ရသည်
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Rules -->
+        <div class="glass-light p-3 mt-3 text-center fade-in">
+            <p class="text-xs" style="color:rgba(255,255,255,0.4);">
+                ⏱️ ၅ စက္ကန့် • ✖️ or ⭕ 4 ကွက်တန်း • 🏆 1600 MMK
             </p>
         </div>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.ready();
+        const tg = window.Telegram?.WebApp;
+        if (tg) { tg.expand(); tg.ready(); }
 
         const API_URL = 'https://tiktocbackend.onrender.com';
         const SOCKET_URL = 'https://tiktocbackend.onrender.com';
-        
+
         let socket = null;
         let user = null;
-        let currentGameId = null;
-        let gameActive = false;
+        let gameId = null;
         let mySymbol = null;
-        let myTurn = false;
-        let timerInterval = null;
-        let turnTimerInterval = null;
-        let balance = 0;
+        let isMyTurn = false;
+        let turnTimer = null;
+        let turnTimeLeft = 5;
+        let searchTimer = null;
+        let searchTimeLeft = 30;
         let isBotGame = false;
-        let reconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
+        let boardData = Array(5).fill(null).map(() => Array(5).fill(''));
 
-        // Show/hide functions
-        function showConnectionStatus(show) {
-            const statusEl = document.getElementById('connectionStatus');
-            if (show) {
-                statusEl.classList.remove('hidden');
-            } else {
-                statusEl.classList.add('hidden');
-            }
-        }
-
-        function showError(message) {
-            const errorEl = document.getElementById('errorMessage');
-            errorEl.textContent = message;
-            errorEl.classList.remove('hidden');
-            
-            setTimeout(() => {
-                errorEl.classList.add('hidden');
-            }, 5000);
-        }
-
-        // Initialize authentication
-        async function initAuth() {
-            showConnectionStatus(true);
-            
+        // ====== Init ======
+        async function init() {
             try {
-                const initData = tg.initData;
-                
-                if (!initData) {
-                    throw new Error('No init data from Telegram');
-                }
-                
-                const response = await fetch(`${API_URL}/api/auth`, {
+                const initData = tg?.initData || '';
+                const body = initData ? { initData } : { telegramId: 12345 };
+                const resp = await fetch(`${API_URL}/api/auth`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ initData }),
-                    mode: 'cors'
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
                 });
-                
-                if (!response.ok) {
-                    throw new Error(`Server error: ${response.status}`);
-                }
-                
-                user = await response.json();
-                balance = user.balance;
-                
-                document.getElementById('balance').textContent = balance;
-                
-                showConnectionStatus(false);
-                
-                // Connect socket after auth
-                connectSocket();
-                
-            } catch (error) {
-                console.error('Auth error:', error);
-                showConnectionStatus(false);
-                showError('ဆာဗာနဲ့ ချိတ်ဆက်လို့မရပါ။ နောက်မှပြန်ကြိုးစားပါ။');
-                
-                document.getElementById('balance').textContent = '0';
-                document.getElementById('playBtn').disabled = true;
-                document.getElementById('playBtn').classList.add('opacity-50', 'cursor-not-allowed');
+                if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                user = await resp.json();
+                document.getElementById('balance').innerHTML = `${user.balance.toLocaleString()} <span class="text-sm font-bold">MMK</span>`;
+            } catch (e) {
+                console.error('Init error:', e);
+                alert('ဆာဗာ ချိတ်ဆက်မှု ပျက်ကွက်သည်: ' + e.message);
             }
         }
 
-        // Connect socket
+        // ====== Socket ======
         function connectSocket() {
-            try {
-                socket = io(SOCKET_URL, {
-                    auth: { token: user.telegramId.toString() },
-                    transports: ['websocket', 'polling'],
-                    reconnection: true,
-                    reconnectionAttempts: maxReconnectAttempts,
-                    reconnectionDelay: 1000,
-                    reconnectionDelayMax: 5000,
-                    timeout: 20000,
-                    forceNew: true
-                });
+            if (socket?.connected) return;
 
-                socket.on('connect', () => {
-                    console.log('Socket connected');
-                    reconnectAttempts = 0;
-                    updateGameStatus('ချိတ်ဆက်မှု အောင်မြင်ပါသည်။ ကစားရန် PLAY နှိပ်ပါ။');
-                });
+            socket = io(SOCKET_URL, {
+                auth: { token: user?.telegramId?.toString() },
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionAttempts: 5,
+                timeout: 10000
+            });
 
-                socket.on('connect_error', (error) => {
-                    console.error('Socket connection error:', error);
-                    reconnectAttempts++;
-                    
-                    if (reconnectAttempts >= maxReconnectAttempts) {
-                        showError('ဆာဗာနဲ့ ချိတ်ဆက်လို့မရပါ။ စာမျက်နှာကို ပြန်ဖွင့်ပါ။');
-                    }
-                });
+            socket.on('connect', () => {
+                console.log('Socket connected:', socket.id);
+            });
 
-                socket.on('error', (msg) => {
-                    console.error('Socket error:', msg);
-                    showError(msg);
-                });
+            socket.on('connect_error', (err) => {
+                console.error('Socket connect error:', err);
+                showState('idle');
+                if (tg?.showAlert) tg.showAlert('ချိတ်ဆက်မှု ပျက်ကွက်သည်: ' + err.message);
+            });
 
-                socket.on('waitingForPlayer', (data) => {
-                    currentGameId = data.gameId;
-                    
-                    document.getElementById('playBtn').classList.add('hidden');
-                    document.getElementById('waitingAnimation').classList.remove('hidden');
-                    document.getElementById('gameStatus').classList.add('hidden');
-                    
-                    // Start waiting timer
-                    let seconds = 30;
-                    if (timerInterval) clearInterval(timerInterval);
-                    timerInterval = setInterval(() => {
-                        document.getElementById('waitingTimer').textContent = `ကျန်ချိန်: ${seconds} စက္ကန့်`;
-                        seconds--;
-                        
-                        if (seconds < 0) {
-                            clearInterval(timerInterval);
-                        }
-                    }, 1000);
-                });
+            socket.on('error', (data) => {
+                const msg = typeof data === 'string' ? data : data?.message || 'Unknown error';
+                console.error('Socket error:', msg);
+                stopSearchTimer();
+                showState('idle');
+                if (tg?.showAlert) tg.showAlert(msg);
+                else alert(msg);
+            });
 
-                socket.on('gameStarted', (data) => {
-                    currentGameId = data.gameId;
-                    gameActive = true;
-                    mySymbol = data.players[0] === user.telegramId ? 'X' : 'O';
-                    myTurn = (data.currentTurn === user.telegramId);
-                    isBotGame = data.isBot || false;
-                    
-                    // Hide waiting animation
-                    document.getElementById('waitingAnimation').classList.add('hidden');
-                    document.getElementById('gameBoard').classList.remove('hidden');
-                    document.getElementById('timerContainer').classList.remove('hidden');
-                    document.getElementById('gameStatus').classList.remove('hidden');
-                    
-                    if (timerInterval) clearInterval(timerInterval);
-                    
-                    // Initialize empty board
-                    const emptyBoard = Array(5).fill().map(() => Array(5).fill(''));
-                    renderBoard(emptyBoard);
-                    
-                    // Update UI
-                    updateGameStatus(myTurn ? '✨ သင့်အလှည့်' : '⏳ ပြိုင်ဘက်အလှည့်');
-                    
-                    // Show opponent info
-                    const opponentInfo = document.getElementById('opponentInfo');
-                    if (isBotGame) {
-                        opponentInfo.textContent = '🤖 AI Bot နှင့် ယှဉ်ပြိုင်နေသည်';
-                    } else {
-                        opponentInfo.textContent = '👤 ပြိုင်ဘက်နှင့် ယှဉ်ပြိုင်နေသည်';
-                    }
-                    document.getElementById('gameInfo').classList.remove('hidden');
-                    
-                    if (data.turnStartTime) {
-                        startTurnTimer(new Date(data.turnStartTime));
-                    }
-                });
+            socket.on('waitingForPlayer', ({ gameId: gId }) => {
+                gameId = gId;
+                startSearchTimer();
+            });
 
-                socket.on('moveMade', (data) => {
-                    renderBoard(data.board);
-                    myTurn = (data.currentTurn === user.telegramId);
-                    
-                    updateGameStatus(myTurn ? '✨ သင့်အလှည့်' : '⏳ ပြိုင်ဘက်အလှည့်');
-                    
-                    if (data.turnStartTime) {
-                        startTurnTimer(new Date(data.turnStartTime));
-                    }
-                });
+            socket.on('gameStarted', (data) => {
+                stopSearchTimer();
+                gameId = data.gameId;
+                isBotGame = data.isBot;
+                boardData = data.board || Array(5).fill(null).map(() => Array(5).fill(''));
 
-                socket.on('gameOver', (data) => {
-                    gameActive = false;
-                    renderBoard(data.board);
-                    
-                    // Hide game elements
-                    document.getElementById('gameBoard').classList.add('hidden');
-                    document.getElementById('timerContainer').classList.add('hidden');
-                    document.getElementById('postGame').classList.remove('hidden');
-                    document.getElementById('gameInfo').classList.add('hidden');
-                    
-                    if (turnTimerInterval) clearInterval(turnTimerInterval);
-                    
-                    // Show result
-                    let message = '';
-                    let bgColor = '';
-                    
-                    if (data.winner === -1) {
-                        message = '🤝 သရေ (Refund 500 MMK)';
-                        bgColor = 'bg-yellow-500/20 text-yellow-400';
-                    } else if (data.winner === user.telegramId) {
-                        message = '🎉 သင်နိုင်သည်! (+1600 MMK)';
-                        bgColor = 'bg-green-500/20 text-green-400';
-                    } else if (data.winner === 0) {
-                        message = '🤖 AI အနိုင်';
-                        bgColor = 'bg-red-500/20 text-red-400';
-                    } else {
-                        message = '😢 သင်ရှုံးသည်';
-                        bgColor = 'bg-red-500/20 text-red-400';
-                    }
-                    
-                    const resultEl = document.getElementById('resultMessage');
-                    resultEl.textContent = message;
-                    resultEl.className = `text-center text-xl font-bold mt-4 p-4 rounded-xl ${bgColor}`;
-                    resultEl.classList.remove('hidden');
-                    
-                    // Update balance
-                    fetchUserBalance();
-                });
+                // Determine my symbol
+                const players = data.players;
+                if (players[0] === user.telegramId) {
+                    mySymbol = 'X';
+                } else {
+                    mySymbol = 'O';
+                }
 
-                socket.on('disconnect', () => {
-                    console.log('Socket disconnected');
-                    if (gameActive) {
-                        showError('ချိတ်ဆက်မှု ပြတ်တောက်သွားပါသည်။ ဂိမ်းအားပြန်ဖွင့်ပါ။');
-                    }
-                });
+                isMyTurn = data.currentTurn === user.telegramId;
 
-            } catch (error) {
-                console.error('Socket connection error:', error);
-                showError('ဆာဗာနဲ့ ချိတ်ဆက်လို့မရပါ။');
-            }
+                // Set player names
+                document.getElementById('player1Name').textContent = 'You (✖️)';
+                document.getElementById('player2Name').textContent = isBotGame ? '🤖 AI' : 'Opponent (⭕)';
+                if (mySymbol === 'O') {
+                    document.getElementById('player1Name').textContent = 'Opponent (✖️)';
+                    document.getElementById('player2Name').textContent = 'You (⭕)';
+                }
+
+                buildBoard();
+                showState('playing');
+                updateTurnUI();
+                startTurnTimer();
+            });
+
+            socket.on('moveMade', (data) => {
+                boardData = data.board;
+                isMyTurn = data.currentTurn === user.telegramId;
+                updateBoard();
+                updateTurnUI();
+                resetTurnTimer();
+            });
+
+            socket.on('gameOver', (data) => {
+                stopTurnTimer();
+                boardData = data.board;
+                updateBoard(true);
+
+                setTimeout(() => {
+                    showResult(data.winner, data.reason);
+                    // Refresh balance after game
+                    if (user) refreshBalance();
+                }, 500);
+            });
+
+            socket.on('searchCancelled', () => {
+                stopSearchTimer();
+                showState('idle');
+            });
         }
 
-        // Start authentication
-        initAuth();
+        // ====== States ======
+        function showState(state) {
+            document.getElementById('stateIdle').style.display = state === 'idle' ? 'block' : 'none';
+            document.getElementById('stateSearching').style.display = state === 'searching' ? 'block' : 'none';
+            document.getElementById('statePlaying').style.display = state === 'playing' ? 'block' : 'none';
+        }
 
-        // Play button click
-        document.getElementById('playBtn').addEventListener('click', () => {
-            if (balance < 1000) {
-                tg.showAlert('ငွေမလောက်ပါ။ ကျေးဇူးပြု၍ ငွေဖြည့်ပါ။');
+        // ====== Search ======
+        function startSearch() {
+            if (!user) { alert('ဦးစွာ Login ဝင်ပါ'); return; }
+            if (user.balance < 1000) {
+                if (tg?.showAlert) tg.showAlert('လက်ကျန်ငွေ မလုံလောက်ပါ (1000 MMK လိုသည်)');
+                else alert('လက်ကျန်ငွေ မလုံလောက်ပါ');
                 return;
             }
+            connectSocket();
+            showState('searching');
+            searchTimeLeft = 30;
+            document.getElementById('searchTimer').textContent = 30;
             
-            if (socket && socket.connected) {
-                socket.emit('findGame');
-                updateGameStatus('ကစားသူရှာနေသည်...');
-            } else {
-                showError('ဆာဗာနဲ့ ချိတ်ဆက်မှု မရှိပါ။ ပြန်ကြိုးစားပါ။');
-            }
-        });
+            // FIX: pass userId in event data as well for reliability
+            socket.emit('findGame', { userId: user.telegramId });
+        }
 
-        // Render game board
-        function renderBoard(board) {
-            const container = document.getElementById('board');
-            container.innerHTML = '';
-            
-            for (let i = 0; i < 5; i++) {
-                for (let j = 0; j < 5; j++) {
+        function cancelSearch() {
+            socket?.emit('cancelSearch');
+            stopSearchTimer();
+            showState('idle');
+        }
+
+        function startSearchTimer() {
+            clearInterval(searchTimer);
+            searchTimeLeft = 30;
+            searchTimer = setInterval(() => {
+                searchTimeLeft--;
+                document.getElementById('searchTimer').textContent = searchTimeLeft;
+                if (searchTimeLeft <= 0) stopSearchTimer();
+            }, 1000);
+        }
+
+        function stopSearchTimer() {
+            clearInterval(searchTimer);
+        }
+
+        // ====== Board ======
+        function buildBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
                     const cell = document.createElement('div');
-                    cell.className = `cell ${board[i][j] === 'X' ? 'cell-x' : board[i][j] === 'O' ? 'cell-o' : ''}`;
-                    
-                    if (board[i][j] === 'X') {
-                        cell.textContent = 'X';
-                    } else if (board[i][j] === 'O') {
-                        cell.textContent = 'O';
-                    } else {
-                        cell.textContent = '';
+                    cell.className = 'cell';
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+                    cell.id = `cell-${r}-${c}`;
+                    cell.addEventListener('click', () => makeMove(r, c));
+                    const v = boardData[r][c];
+                    if (v) {
+                        cell.textContent = v === 'X' ? '✖' : '⭕';
+                        cell.classList.add('taken', v.toLowerCase());
                     }
-                    
-                    cell.dataset.row = i;
-                    cell.dataset.col = j;
-                    
-                    cell.addEventListener('click', () => {
-                        if (!gameActive || !myTurn || board[i][j] !== '') return;
-                        
-                        cell.classList.add('disabled');
-                        
-                        socket.emit('makeMove', { 
-                            gameId: currentGameId, 
-                            row: i, 
-                            col: j 
-                        });
-                    });
-                    
-                    container.appendChild(cell);
+                    board.appendChild(cell);
                 }
             }
+            updateCellInteractivity();
         }
 
-        // Start turn timer
-        function startTurnTimer(turnStartTime) {
-            if (turnTimerInterval) clearInterval(turnTimerInterval);
-            
-            const updateTimer = () => {
-                const now = new Date();
-                const elapsed = (now - turnStartTime) / 1000;
-                const remaining = Math.max(0, 5 - elapsed);
-                
-                document.getElementById('timerText').textContent = Math.ceil(remaining);
-                
-                // Update circle
-                const circle = document.getElementById('timerCircle');
-                const circumference = 276.5;
-                const offset = circumference * (remaining / 5);
-                circle.style.strokeDashoffset = circumference - offset;
-                
-                // Change color based on time
-                if (remaining <= 1) {
-                    circle.classList.add('warning');
+        function updateBoard(final = false) {
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const cell = document.getElementById(`cell-${r}-${c}`);
+                    if (!cell) continue;
+                    const v = boardData[r][c];
+                    if (v && !cell.classList.contains('taken')) {
+                        cell.textContent = v === 'X' ? '✖' : '⭕';
+                        cell.classList.add('taken', v.toLowerCase(), 'pop');
+                    }
+                }
+            }
+            if (!final) updateCellInteractivity();
+        }
+
+        function updateCellInteractivity() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                if (cell.classList.contains('taken')) {
+                    cell.classList.add('disabled');
+                } else if (isMyTurn) {
+                    cell.classList.remove('disabled');
+                    cell.classList.add('my-turn');
                 } else {
-                    circle.classList.remove('warning');
+                    cell.classList.add('disabled');
+                    cell.classList.remove('my-turn');
                 }
-                
-                if (remaining <= 0) {
-                    clearInterval(turnTimerInterval);
-                }
-            };
+            });
+        }
+
+        function makeMove(row, col) {
+            if (!isMyTurn || !gameId || !socket?.connected) return;
+            const cell = document.getElementById(`cell-${row}-${col}`);
+            if (cell?.classList.contains('taken')) return;
             
-            updateTimer();
-            turnTimerInterval = setInterval(updateTimer, 100);
+            isMyTurn = false;
+            updateCellInteractivity();
+            socket.emit('makeMove', { gameId, row, col });
         }
 
-        // Update game status
-        function updateGameStatus(text) {
-            document.getElementById('gameStatus').textContent = text;
+        // ====== Turn Timer ======
+        function startTurnTimer() {
+            turnTimeLeft = 5;
+            updateTimerUI(5);
+            stopTurnTimer();
+            turnTimer = setInterval(() => {
+                turnTimeLeft--;
+                updateTimerUI(turnTimeLeft);
+                if (turnTimeLeft <= 0) stopTurnTimer();
+            }, 1000);
         }
 
-        // Fetch user balance
-        async function fetchUserBalance() {
-            try {
-                const response = await fetch(`${API_URL}/api/user/${user.telegramId}`);
-                const data = await response.json();
-                if (data.balance !== undefined) {
-                    balance = data.balance;
-                    document.getElementById('balance').textContent = balance;
-                }
-            } catch (error) {
-                console.error('Error fetching balance:', error);
+        function resetTurnTimer() {
+            stopTurnTimer();
+            startTurnTimer();
+        }
+
+        function stopTurnTimer() {
+            clearInterval(turnTimer);
+        }
+
+        function updateTimerUI(val) {
+            const num = document.getElementById('timerNum');
+            const circle = document.getElementById('timerCircle');
+            if (!num || !circle) return;
+            num.textContent = Math.max(0, val);
+            const pct = val / 5;
+            const dash = 220;
+            circle.style.strokeDashoffset = dash * (1 - pct);
+            // Color change
+            if (val <= 2) {
+                circle.style.stroke = '#ef4444';
+                num.style.color = '#f87171';
+            } else if (val <= 3) {
+                circle.style.stroke = '#f97316';
+                num.style.color = '#fb923c';
+            } else {
+                circle.style.stroke = '#fbbf24';
+                num.style.color = 'white';
             }
         }
 
-        // Play Again
-        document.getElementById('playAgainBtn').addEventListener('click', () => {
-            document.getElementById('postGame').classList.add('hidden');
-            document.getElementById('resultMessage').classList.add('hidden');
-            document.getElementById('playBtn').classList.remove('hidden');
-            document.getElementById('gameStatus').classList.remove('hidden');
-            updateGameStatus('ကစားရန် PLAY နှိပ်ပါ');
-        });
+        // ====== Turn UI ======
+        function updateTurnUI() {
+            const el = document.getElementById('turnStatus');
+            if (isMyTurn) {
+                el.innerHTML = '<div class="status-badge badge-green mx-auto" style="display:inline-flex;">🎯 သင့်လှည့်</div>';
+            } else {
+                const name = isBotGame ? '🤖 AI' : 'ကစားသူ';
+                el.innerHTML = `<div class="status-badge badge-purple mx-auto" style="display:inline-flex;"><div class="dot-pulse" style="display:inline-flex;gap:3px;"><span></span><span></span><span></span></div> ${name} ၏ လှည့်</div>`;
+            }
+            updateCellInteractivity();
+        }
 
-        // Exit
-        document.getElementById('exitBtn').addEventListener('click', () => {
+        // ====== Result ======
+        function showResult(winner, reason) {
+            const overlay = document.getElementById('resultOverlay');
+            const emoji = document.getElementById('resultEmoji');
+            const title = document.getElementById('resultTitle');
+            const subtitle = document.getElementById('resultSubtitle');
+
+            if (winner === user.telegramId) {
+                emoji.textContent = '🏆';
+                title.textContent = 'အနိုင်ရပြီ!';
+                title.style.color = '#34d399';
+                subtitle.textContent = '+1,600 MMK ရရှိပြီ!';
+            } else if (winner === -1) {
+                emoji.textContent = '🤝';
+                title.textContent = 'သရေကျပြီ!';
+                title.style.color = '#93c5fd';
+                subtitle.textContent = '+500 MMK ပြန်ရပြီ';
+            } else if (winner === 0) {
+                emoji.textContent = '🤖';
+                title.textContent = 'AI နိုင်ပြီ';
+                title.style.color = '#f87171';
+                subtitle.textContent = reason === 'timeout' ? '⏱️ အချိန်ကုန်သွားသည်' : 'ထပ်ကြိုးစားပါ!';
+            } else {
+                emoji.textContent = '😔';
+                title.textContent = 'ရှုံးပြီ';
+                title.style.color = '#f87171';
+                subtitle.textContent = reason === 'timeout' ? '⏱️ အချိန်ကုန်သွားသည်' : 'ထပ်ကြိုးစားပါ!';
+            }
+
+            overlay.style.display = 'flex';
+        }
+
+        function playAgain() {
+            document.getElementById('resultOverlay').style.display = 'none';
+            gameId = null; mySymbol = null; isMyTurn = false;
+            boardData = Array(5).fill(null).map(() => Array(5).fill(''));
+            showState('idle');
+        }
+
+        function goHome() {
             window.location.href = '/index.html';
-        });
+        }
 
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            if (timerInterval) clearInterval(timerInterval);
-            if (turnTimerInterval) clearInterval(turnTimerInterval);
-            if (socket) socket.disconnect();
-        });
+        // ====== Balance refresh ======
+        async function refreshBalance() {
+            if (!user?.telegramId) return;
+            try {
+                const r = await fetch(`${API_URL}/api/user/${user.telegramId}`);
+                const d = await r.json();
+                if (d.balance !== undefined) {
+                    user.balance = d.balance;
+                    document.getElementById('balance').innerHTML = `${d.balance.toLocaleString()} <span class="text-sm font-bold">MMK</span>`;
+                }
+            } catch (e) {}
+        }
+
+        // Init
+        init();
     </script>
 </body>
 </html>
