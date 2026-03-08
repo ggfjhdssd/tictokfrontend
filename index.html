@@ -1,534 +1,562 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="my">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>TicToeTic - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+        * { font-family: 'Nunito', sans-serif; box-sizing: border-box; }
+        body { background: #0f0c29; min-height: 100vh; overflow-x: hidden; }
+
+        /* Animated background */
+        .bg-anim {
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            position: fixed; inset: 0; z-index: -1;
         }
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+        .bg-anim::after {
+            content: '';
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at 20% 50%, rgba(120,40,200,0.15) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 20%, rgba(255,100,150,0.1) 0%, transparent 50%);
         }
-        .animate-slideDown {
-            animation: slideDown 0.3s ease-out;
+
+        /* Glass card */
+        .glass {
+            background: rgba(255,255,255,0.07);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 20px;
         }
-        .animate-pulse {
-            animation: pulse 2s infinite;
+        .glass-light {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
         }
-        .copy-btn:active {
-            transform: scale(0.95);
+
+        /* Gradient text */
+        .grad-text {
+            background: linear-gradient(135deg, #f093fb, #f5576c, #fda085);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        .loading-spinner {
-            border: 3px solid rgba(255,255,255,0.3);
+        .grad-text-gold {
+            background: linear-gradient(135deg, #f6d365, #fda085);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none; color: white; font-weight: 800;
+            border-radius: 14px; padding: 14px;
+            transition: all 0.2s; cursor: pointer; width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primary:active { transform: scale(0.97); opacity: 0.9; }
+
+        .btn-green {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+        }
+        .btn-blue {
+            background: linear-gradient(135deg, #2980b9, #6dd5fa);
+        }
+        .btn-yellow {
+            background: linear-gradient(135deg, #f7971e, #ffd200);
+            color: #1a1a2e;
+        }
+        .btn-red {
+            background: linear-gradient(135deg, #eb3349, #f45c43);
+        }
+        .btn-disabled { opacity: 0.5; pointer-events: none; }
+
+        /* Inputs */
+        .form-input {
+            width: 100%; padding: 12px 16px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px; color: white; font-size: 14px;
+            outline: none; transition: border 0.2s;
+        }
+        .form-input:focus { border-color: rgba(150,100,255,0.6); }
+        .form-input::placeholder { color: rgba(255,255,255,0.35); }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 600px; } }
+
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        .pulse-anim { animation: pulse 2.5s infinite; }
+        .spin-anim { animation: spin 1s linear infinite; }
+
+        .slide-panel { overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease; max-height: 0; opacity: 0; }
+        .slide-panel.open { max-height: 700px; opacity: 1; }
+
+        /* Spinner */
+        .spinner {
+            width: 20px; height: 20px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top: 2px solid white;
             border-radius: 50%;
-            border-top: 3px solid white;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        /* Balance glow */
+        .balance-glow {
+            text-shadow: 0 0 20px rgba(100,255,150,0.5);
         }
+
+        /* Toast */
+        #toast {
+            position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; transition: all 0.3s;
+        }
+        .toast-box {
+            padding: 10px 20px; border-radius: 10px;
+            font-size: 13px; font-weight: 700;
+            white-space: nowrap; max-width: 90vw;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        .toast-success { background: linear-gradient(135deg, #11998e, #38ef7d); color: #fff; }
+        .toast-error { background: linear-gradient(135deg, #eb3349, #f45c43); color: #fff; }
+        .toast-info { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+
+        /* Stats row */
+        .stat-card {
+            flex: 1; text-align: center; padding: 10px 6px;
+        }
+
+        /* Divider */
+        .divider { height: 1px; background: rgba(255,255,255,0.08); margin: 12px 0; }
+
+        /* KPay info box */
+        .kpay-box {
+            background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,150,50,0.08));
+            border: 1px solid rgba(255,215,0,0.2);
+            border-radius: 12px; padding: 14px; margin-bottom: 12px;
+        }
+
+        /* Rule item */
+        .rule-item {
+            display: flex; align-items: flex-start; gap: 8px;
+            padding: 6px 0;
+        }
+
+        /* Loading overlay */
+        #loadingOverlay {
+            position: fixed; inset: 0;
+            background: rgba(15,12,41,0.95);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 999;
+        }
+
+        /* Number counter animation */
+        .counter-animate { transition: all 0.5s ease; }
     </style>
 </head>
-<body class="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 min-h-screen p-4">
-    <div class="max-w-md mx-auto">
-        <!-- Header Card -->
-        <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-6 mb-4 border border-white/20">
+<body>
+    <div class="bg-anim"></div>
+    
+    <!-- Toast -->
+    <div id="toast" style="display:none;">
+        <div class="toast-box" id="toastBox"></div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="text-4xl mb-4">🎮</div>
+        <div class="text-white font-bold text-xl mb-2">TicToeTic</div>
+        <div class="text-purple-300 text-sm mb-6">Loading...</div>
+        <div class="spinner spin-anim"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-md mx-auto p-4 pb-8" style="display:none;" id="mainContent">
+        
+        <!-- Header -->
+        <div class="glass p-5 mb-4 fade-in">
             <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-white">🎮 TicToeTic</h1>
-                    <p class="text-purple-200 text-sm mt-1">Play & Earn Money</p>
+                    <h1 class="text-2xl font-black text-white">🎮 TicToeTic</h1>
+                    <p class="text-sm" style="color:rgba(255,255,255,0.5);">5x5 Tic-Tac-Toe • Win Real Money</p>
                 </div>
-                <div class="bg-purple-500/30 rounded-full p-3">
-                    <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clip-rule="evenodd"></path>
-                    </svg>
+                <div class="text-right">
+                    <div class="text-xs mb-1" style="color:rgba(255,255,255,0.5);">အသုံးပြုသူ</div>
+                    <div id="username" class="text-white font-bold text-sm">-</div>
                 </div>
-            </div>
-            
-            <!-- Connection Status -->
-            <div id="connectionStatus" class="text-center text-sm mb-2 hidden">
-                <span class="inline-flex items-center">
-                    <span class="loading-spinner mr-2"></span>
-                    <span class="text-yellow-300">ချိတ်ဆက်နေသည်...</span>
-                </span>
-            </div>
-            
-            <!-- Error Message -->
-            <div id="errorMessage" class="hidden bg-red-500/20 border border-red-500 rounded-lg p-3 mb-4 text-red-300 text-sm text-center">
             </div>
 
-            <!-- User Info -->
-            <div class="bg-white/5 rounded-2xl p-4 mb-4 border border-white/10">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-purple-200">အသုံးပြုသူအမည်</span>
-                    <span id="username" class="text-white font-semibold">-</span>
-                </div>
+            <!-- Balance Card -->
+            <div class="glass-light p-4 mb-4" style="background:rgba(100,255,150,0.05); border-color:rgba(100,255,150,0.15);">
                 <div class="flex items-center justify-between">
-                    <span class="text-purple-200">လက်ကျန်ငွေ</span>
-                    <div class="flex items-center">
-                        <span id="balance" class="text-2xl font-bold text-green-400">0</span>
-                        <span class="text-green-400 ml-1">MMK</span>
+                    <div>
+                        <div class="text-xs mb-1" style="color:rgba(255,255,255,0.5);">💰 လက်ကျန်ငွေ</div>
+                        <div class="flex items-baseline gap-2">
+                            <span id="balance" class="text-3xl font-black text-green-400 balance-glow counter-animate">0</span>
+                            <span class="text-green-400 font-bold">MMK</span>
+                        </div>
                     </div>
+                    <button onclick="refreshBalance()" class="p-2 rounded-xl" style="background:rgba(100,255,150,0.1);">
+                        <span id="refreshIcon">🔄</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="flex gap-2 mb-4">
+                <div class="stat-card glass-light">
+                    <div class="text-lg font-black text-white" id="statGames">0</div>
+                    <div class="text-xs" style="color:rgba(255,255,255,0.5);">ကစားမှု</div>
+                </div>
+                <div class="stat-card glass-light">
+                    <div class="text-lg font-black text-green-400" id="statWins">0</div>
+                    <div class="text-xs" style="color:rgba(255,255,255,0.5);">နိုင်မှု</div>
+                </div>
+                <div class="stat-card glass-light">
+                    <div class="text-lg font-black text-red-400" id="statLosses">0</div>
+                    <div class="text-xs" style="color:rgba(255,255,255,0.5);">ရှုံးမှု</div>
                 </div>
             </div>
 
             <!-- Action Buttons -->
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <button id="depositBtn" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-4 rounded-xl transition-all transform hover:scale-105 shadow-lg">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <button id="depositBtn" class="btn-primary btn-green" onclick="togglePanel('depositPanel')">
                     💰 ငွေဖြည့်
                 </button>
-                <button id="withdrawBtn" class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-4 px-4 rounded-xl transition-all transform hover:scale-105 shadow-lg">
+                <button id="withdrawBtn" class="btn-primary btn-blue" onclick="togglePanel('withdrawPanel')">
                     💸 ငွေထုတ်
                 </button>
             </div>
 
-            <!-- Quick Play Button -->
-            <a href="/play.html" class="block w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white font-bold py-4 px-4 rounded-xl text-center mb-4 transition-all transform hover:scale-105 shadow-lg animate-pulse">
-                🎮 စတင်ကစားရန် (1000 MMK)
+            <!-- Play Button -->
+            <a href="/play.html" class="btn-primary btn-yellow pulse-anim text-xl" style="text-decoration:none; display:flex;">
+                🎮 ကစားရန် (1000 MMK)
             </a>
+        </div>
 
-            <!-- Deposit Form -->
-            <div id="depositForm" class="hidden bg-white/5 rounded-2xl p-4 mb-4 border border-white/10 animate-slideDown">
-                <div class="text-center mb-4">
-                    <div class="bg-yellow-500/20 rounded-lg p-3">
-                        <p class="text-yellow-300 font-mono text-lg">💳 KPay: 09792310926</p>
-                        <p class="text-yellow-300 font-mono">👤 Name: Daw Mi Thaung</p>
+        <!-- Deposit Panel -->
+        <div id="depositPanel" class="glass mb-4 slide-panel">
+            <div class="p-5">
+                <h3 class="text-white font-black text-lg mb-4">💰 ငွေဖြည့်ရန်</h3>
+                <div class="kpay-box">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-yellow-300 font-black">💳 KPay:</span>
+                        <span class="text-yellow-300 font-bold font-mono">09792310926</span>
+                        <button onclick="copyText('09792310926')" class="text-xs px-2 py-0.5 rounded-lg" style="background:rgba(255,215,0,0.2); color:#ffd700;">copy</button>
                     </div>
-                    <p class="text-purple-300 text-xs mt-2">* ငွေလွှဲပြီးမှသော် ဖောင်ဖြည့်ပါ</p>
+                    <div class="flex items-center gap-2">
+                        <span class="text-yellow-300 font-black">👤 Name:</span>
+                        <span class="text-yellow-300 font-bold">Daw Mi Thaung</span>
+                    </div>
+                    <div class="text-xs mt-2" style="color:rgba(255,215,0,0.7);">* ငွေလွှဲပြီးမှ ဖောင်ဖြည့်ပါ</div>
                 </div>
-                
-                <input type="text" id="depositKpayName" placeholder="သင့် KPay Name (ဥပမာ - Su Su)" 
-                    class="w-full p-3 bg-white/10 border border-white/20 rounded-xl mb-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                
-                <input type="text" id="depositTxnId" placeholder="Transaction ID (ငွေလွှဲအမှတ်)" 
-                    class="w-full p-3 bg-white/10 border border-white/20 rounded-xl mb-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                
-                <input type="number" id="depositAmount" placeholder="ပမာဏ (အနည်းဆုံး 1000 MMK)" min="1000" 
-                    class="w-full p-3 bg-white/10 border border-white/20 rounded-xl mb-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                
-                <button id="submitDeposit" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 rounded-xl transition-all">
-                    ✅ ငွေဖြည့်ရန် တောင်းဆိုမည်
-                </button>
-                
-                <p id="depositMessage" class="text-sm mt-3 text-center"></p>
-            </div>
-
-            <!-- Withdraw Form -->
-            <div id="withdrawForm" class="hidden bg-white/5 rounded-2xl p-4 mb-4 border border-white/10 animate-slideDown">
-                <div class="bg-blue-500/20 rounded-lg p-3 mb-4 text-center">
-                    <p class="text-blue-300 text-sm">အနည်းဆုံး 3000 MMK မှ ထုတ်ယူနိုင်ပါသည်</p>
-                </div>
-                
-                <input type="text" id="withdrawKpayName" placeholder="သင့် KPay Name" 
-                    class="w-full p-3 bg-white/10 border border-white/20 rounded-xl mb-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                
-                <input type="text" id="withdrawKpayNumber" placeholder="KPay ဖုန်းနံပါတ် (ဥပမာ - 09792310926)" 
-                    class="w-full p-3 bg-white/10 border border-white/20 rounded-xl mb-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                
-                <input type="number" id="withdrawAmount" placeholder="ပမာဏ (အနည်းဆုံး 3000 MMK)" min="3000" 
-                    class="w-full p-3 bg-white/10 border border-white/20 rounded-xl mb-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                
-                <button id="submitWithdraw" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3 rounded-xl transition-all">
-                    💸 ငွေထုတ်ရန် တောင်းဆိုမည်
-                </button>
-                
-                <p id="withdrawMessage" class="text-sm mt-3 text-center"></p>
-            </div>
-
-            <!-- Referral Section -->
-            <div class="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-4 border border-white/10">
-                <div class="flex items-center mb-2">
-                    <svg class="w-5 h-5 text-purple-300 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"></path>
-                    </svg>
-                    <p class="text-purple-200 text-sm font-semibold">မိတ်ဆွေဖိတ်ရန် (၁၀၀၀ ဖြည့်တိုင်း ၁၀၀ ရမည်)</p>
-                </div>
-                
-                <div class="flex">
-                    <input type="text" id="referralLink" readonly 
-                        class="flex-1 p-2 bg-white/10 border border-white/20 rounded-l-xl text-white text-sm" 
-                        value="Loading...">
-                    <button id="copyLink" 
-                        class="copy-btn bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-4 rounded-r-xl transition-all font-medium">
-                        📋 Copy
+                <div class="flex flex-col gap-3">
+                    <input type="text" id="depositKpayName" class="form-input" placeholder="သင့် KPay Name (ဥပမာ - Mg Mg)">
+                    <input type="text" id="depositTxnId" class="form-input" placeholder="Transaction ID">
+                    <input type="number" id="depositAmount" class="form-input" placeholder="ပမာဏ (အနည်းဆုံး 1000 MMK)" min="1000">
+                    <button onclick="submitDeposit()" class="btn-primary btn-green">
+                        <span id="depositBtnText">✅ တောင်းဆိုမည်</span>
+                        <div class="spinner spin-anim" id="depositSpinner" style="display:none;"></div>
                     </button>
                 </div>
-                
-                <p class="text-purple-300 text-xs mt-2">
-                    * မိတ်ဆွေတစ်ဦး 1000 MMK ဖြည့်တိုင်း သင်ရသော 100 MMK ချက်ချင်းရရှိမည်
-                </p>
             </div>
         </div>
 
-        <!-- Game Rules Card -->
-        <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-4 border border-white/20">
-            <h2 class="text-white font-bold mb-3 flex items-center">
-                <svg class="w-5 h-5 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                </svg>
-                📜 ဂိမ်းစည်းကမ်းများ
-            </h2>
-            
-            <ul class="text-purple-200 text-sm space-y-2">
-                <li class="flex items-start">
-                    <span class="text-yellow-400 mr-2">•</span>
-                    <span>5x5 အကွက်တွင် ၄ ကွက်တန်းလျှင် အနိုင်ရမည်</span>
-                </li>
-                <li class="flex items-start">
-                    <span class="text-yellow-400 mr-2">•</span>
-                    <span>တစ်ပွဲလျှင် ၁၀၀၀ MMK ကျသင့်မည်</span>
-                </li>
-                <li class="flex items-start">
-                    <span class="text-yellow-400 mr-2">•</span>
-                    <span>အနိုင်ရသူ ၁၆၀၀ MMK ရမည် (၄၀၀ MMK မှာ Admin ကြေး)</span>
-                </li>
-                <li class="flex items-start">
-                    <span class="text-yellow-400 mr-2">•</span>
-                    <span>တစ်လှည့်စီ ၅ စက္ကန့်သာ အချိန်ပေးမည်</span>
-                </li>
-                <li class="flex items-start">
-                    <span class="text-yellow-400 mr-2">•</span>
-                    <span>သရေကျလျှင် ၅၀၀ စီ ပြန်အမ်းမည်</span>
-                </li>
-                <li class="flex items-start">
-                    <span class="text-yellow-400 mr-2">•</span>
-                    <span>မိတ်ဆွေဖိတ်လျှင် ၁၀၀၀ ဖြည့်တိုင်း ၁၀၀ ရမည်</span>
-                </li>
-            </ul>
+        <!-- Withdraw Panel -->
+        <div id="withdrawPanel" class="glass mb-4 slide-panel">
+            <div class="p-5">
+                <h3 class="text-white font-black text-lg mb-4">💸 ငွေထုတ်ရန်</h3>
+                <div class="glass-light p-3 mb-3" style="background:rgba(100,150,255,0.05); border-color:rgba(100,150,255,0.2);">
+                    <div class="text-xs text-blue-300">• အနည်းဆုံး 3000 MMK မှ ထုတ်ယူနိုင်သည်</div>
+                    <div class="text-xs text-blue-300 mt-1">• စီမံခန့်ခွဲသူ အတည်ပြုမှ ၁ ရက်အတွင်း ပေးပို့မည်</div>
+                </div>
+                <div class="flex flex-col gap-3">
+                    <input type="text" id="withdrawKpayName" class="form-input" placeholder="သင့် KPay Name">
+                    <input type="text" id="withdrawKpayNumber" class="form-input" placeholder="KPay ဖုန်းနံပါတ် (09xxxxxxxxx)">
+                    <input type="number" id="withdrawAmount" class="form-input" placeholder="ပမာဏ (အနည်းဆုံး 3000 MMK)" min="3000">
+                    <button onclick="submitWithdraw()" class="btn-primary btn-blue">
+                        <span id="withdrawBtnText">💸 တောင်းဆိုမည်</span>
+                        <div class="spinner spin-anim" id="withdrawSpinner" style="display:none;"></div>
+                    </button>
+                </div>
+            </div>
         </div>
-        
+
+        <!-- Referral Card -->
+        <div class="glass p-5 mb-4 fade-in">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="text-xl">🔗</span>
+                <div>
+                    <h3 class="text-white font-black">မိတ်ဆွေဖိတ်ရန်</h3>
+                    <p class="text-xs" style="color:rgba(255,255,255,0.5);">မိတ်ဆွေ 1000 ဖြည့်တိုင်း 100 MMK ရမည်</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <input type="text" id="referralLink" readonly class="form-input text-xs" value="Loading..." style="flex:1;">
+                <button onclick="copyReferral()" id="copyBtn" class="btn-primary" style="width:auto; padding:12px 16px; border-radius:12px; background:linear-gradient(135deg,#667eea,#764ba2);">
+                    📋
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Rules -->
+        <div class="glass p-5 mb-4 fade-in">
+            <h3 class="text-white font-black mb-3">📜 ဂိမ်းစည်းကမ်းများ</h3>
+            <div class="rule-item">
+                <span class="text-yellow-400">⚔️</span>
+                <span class="text-sm" style="color:rgba(255,255,255,0.8);">5x5 အကွက်တွင် ၄ ကွက်တန်းလျှင် အနိုင်ရသည်</span>
+            </div>
+            <div class="divider"></div>
+            <div class="rule-item">
+                <span class="text-yellow-400">💰</span>
+                <span class="text-sm" style="color:rgba(255,255,255,0.8);">တစ်ပွဲ ဝင်ကြေး ၁၀၀၀ MMK</span>
+            </div>
+            <div class="rule-item">
+                <span class="text-green-400">🏆</span>
+                <span class="text-sm" style="color:rgba(255,255,255,0.8);">အနိုင်ရသူ <strong class="text-green-400">1600 MMK</strong> ရမည်</span>
+            </div>
+            <div class="rule-item">
+                <span class="text-blue-400">🤝</span>
+                <span class="text-sm" style="color:rgba(255,255,255,0.8);">သရေကျလျှင် <strong class="text-blue-400">500 MMK</strong> စီ ပြန်ရမည်</span>
+            </div>
+            <div class="divider"></div>
+            <div class="rule-item">
+                <span class="text-red-400">⏱️</span>
+                <span class="text-sm" style="color:rgba(255,255,255,0.8);">တစ်လှည့်စီ <strong class="text-red-400">5 စက္ကန့်</strong> သာ ကြာမည်</span>
+            </div>
+            <div class="rule-item">
+                <span class="text-purple-400">🤖</span>
+                <span class="text-sm" style="color:rgba(255,255,255,0.8);">30 စက္ကန့် အတွင်း ကစားသူ မတွေ့လျှင် AI နှင့် ကစားမည်</span>
+            </div>
+        </div>
+
         <!-- Footer -->
-        <div class="text-center mt-4 text-purple-300 text-xs">
-            <p>© 2024 TicToeTic. All rights reserved.</p>
-            <p class="mt-1">အကူအညီအတွက် Bot မှတစ်ဆင့် ဆက်သွယ်နိုင်ပါသည်</p>
+        <div class="text-center text-xs pb-4" style="color:rgba(255,255,255,0.3);">
+            © 2024 TicToeTic • Telegram Mini App
         </div>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.ready();
+        const tg = window.Telegram?.WebApp;
+        if (tg) { tg.expand(); tg.ready(); }
 
         const API_URL = 'https://tiktocbackend.onrender.com';
         let user = null;
-        let retryCount = 0;
-        const maxRetries = 3;
 
-        // Show connection status
-        function showConnectionStatus(show) {
-            const statusEl = document.getElementById('connectionStatus');
-            if (show) {
-                statusEl.classList.remove('hidden');
-            } else {
-                statusEl.classList.add('hidden');
-            }
+        // ====== Toast ======
+        let toastTimer;
+        function showToast(msg, type = 'info', duration = 3000) {
+            const toast = document.getElementById('toast');
+            const box = document.getElementById('toastBox');
+            box.textContent = msg;
+            box.className = `toast-box toast-${type}`;
+            toast.style.display = 'block';
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.style.display = 'none'; }, duration);
         }
 
-        // Show error message
-        function showError(message) {
-            const errorEl = document.getElementById('errorMessage');
-            errorEl.textContent = message;
-            errorEl.classList.remove('hidden');
-            
-            setTimeout(() => {
-                errorEl.classList.add('hidden');
-            }, 5000);
-        }
-
-        // Initialize authentication
-        async function initAuth() {
-            showConnectionStatus(true);
-            
-            try {
-                const initData = tg.initData;
-                console.log('Init data:', initData);
-                
-                if (!initData) {
-                    throw new Error('No init data from Telegram');
-                }
-                
-                const response = await fetch(`${API_URL}/api/auth`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ initData }),
-                    mode: 'cors'
-                });
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Server error: ${response.status} - ${errorText}`);
-                }
-                
-                user = await response.json();
-                
-                // Update UI
-                document.getElementById('username').textContent = user.username || `User${user.telegramId}`;
-                document.getElementById('balance').textContent = user.balance;
-
-                // Set referral link
-                const botUsername = 'tictoe1_bot';
-                const referralLink = `https://t.me/${botUsername}?start=${user.referralCode}`;
-                document.getElementById('referralLink').value = referralLink;
-                
-                showConnectionStatus(false);
-                retryCount = 0;
-                
-            } catch (error) {
-                console.error('Auth error:', error);
-                showConnectionStatus(false);
-                
-                if (retryCount < maxRetries) {
-                    retryCount++;
-                    showError(`ချိတ်ဆက်မှု ပျက်ကွက်ပါသည်။ ပြန်လည်ကြိုးစားနေသည်... (${retryCount}/${maxRetries})`);
-                    setTimeout(initAuth, 2000);
+        // ====== Panel Toggle ======
+        function togglePanel(id) {
+            const panels = ['depositPanel', 'withdrawPanel'];
+            panels.forEach(p => {
+                const el = document.getElementById(p);
+                if (p === id) {
+                    el.classList.toggle('open');
                 } else {
-                    document.getElementById('username').textContent = 'Connection Error';
-                    document.getElementById('balance').textContent = '0';
-                    document.getElementById('referralLink').value = 'ချိတ်ဆက်မှု ပျက်ကွက်ပါသည်';
-                    
-                    showError('ဆာဗာနဲ့ ချိတ်ဆက်လို့မရပါ။ ကျေးဇူးပြု၍ နောက်မှပြန်ကြိုးစားပါ။');
+                    el.classList.remove('open');
                 }
+            });
+        }
+
+        // ====== Copy ======
+        function copyText(text) {
+            navigator.clipboard?.writeText(text).catch(() => {});
+            showToast('✅ Copied!', 'success', 1500);
+        }
+
+        function copyReferral() {
+            const link = document.getElementById('referralLink').value;
+            if (link && link !== 'Loading...') {
+                navigator.clipboard?.writeText(link).catch(() => {});
+                const btn = document.getElementById('copyBtn');
+                btn.textContent = '✅';
+                setTimeout(() => btn.textContent = '📋', 2000);
+                if (tg?.showAlert) tg.showAlert('Referral link copied!');
+                else showToast('✅ Referral link copied!', 'success');
             }
         }
 
-        // Start authentication
-        initAuth();
+        // ====== Auth ======
+        async function initAuth() {
+            try {
+                const initData = tg?.initData || '';
+                const body = initData ? { initData } : { telegramId: 12345 }; // dev fallback
 
-        // Toggle deposit form
-        document.getElementById('depositBtn').addEventListener('click', () => {
-            const depositForm = document.getElementById('depositForm');
-            const withdrawForm = document.getElementById('withdrawForm');
-            
-            if (depositForm.classList.contains('hidden')) {
-                depositForm.classList.remove('hidden');
-                withdrawForm.classList.add('hidden');
-                
-                // Clear messages
-                document.getElementById('depositMessage').textContent = '';
-                document.getElementById('withdrawMessage').textContent = '';
-            } else {
-                depositForm.classList.add('hidden');
+                const resp = await fetch(`${API_URL}/api/auth`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.error || `HTTP ${resp.status}`);
+                }
+
+                user = await resp.json();
+                updateUI();
+                hideLoading();
+            } catch (err) {
+                console.error('Auth error:', err);
+                hideLoading();
+                showToast('⚠️ ဆာဗာနှင့် ချိတ်ဆက်မှု ပျက်ကွက်သည်: ' + err.message, 'error', 5000);
+                // Show UI anyway with error state
+                document.getElementById('username').textContent = 'Error';
+                document.getElementById('mainContent').style.display = 'block';
             }
-        });
+        }
 
-        // Toggle withdraw form
-        document.getElementById('withdrawBtn').addEventListener('click', () => {
-            const withdrawForm = document.getElementById('withdrawForm');
-            const depositForm = document.getElementById('depositForm');
-            
-            if (withdrawForm.classList.contains('hidden')) {
-                withdrawForm.classList.remove('hidden');
-                depositForm.classList.add('hidden');
-                
-                // Clear messages
-                document.getElementById('depositMessage').textContent = '';
-                document.getElementById('withdrawMessage').textContent = '';
-            } else {
-                withdrawForm.classList.add('hidden');
+        function updateUI() {
+            if (!user) return;
+            document.getElementById('username').textContent = user.username || user.firstName || `User${user.telegramId}`;
+            document.getElementById('balance').textContent = (user.balance || 0).toLocaleString();
+            document.getElementById('statGames').textContent = user.totalGames || 0;
+            document.getElementById('statWins').textContent = user.wins || 0;
+            document.getElementById('statLosses').textContent = user.losses || 0;
+
+            const botUsername = 'tictoe1_bot';
+            document.getElementById('referralLink').value = `https://t.me/${botUsername}?start=${user.referralCode}`;
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+        }
+
+        // ====== Refresh Balance ======
+        async function refreshBalance() {
+            if (!user) return;
+            document.getElementById('refreshIcon').className = 'spin-anim';
+            document.getElementById('refreshIcon').textContent = '⟳';
+            try {
+                const resp = await fetch(`${API_URL}/api/user/${user.telegramId}`);
+                const data = await resp.json();
+                if (data.balance !== undefined) {
+                    user.balance = data.balance;
+                    user.totalGames = data.totalGames || user.totalGames;
+                    user.wins = data.wins || user.wins;
+                    user.losses = data.losses || user.losses;
+                    updateUI();
+                    showToast('✅ Balance updated', 'success', 1500);
+                }
+            } catch (e) {
+                showToast('⚠️ Refresh failed', 'error');
             }
-        });
+            document.getElementById('refreshIcon').className = '';
+            document.getElementById('refreshIcon').textContent = '🔄';
+        }
 
-        // Submit deposit
-        document.getElementById('submitDeposit').addEventListener('click', async () => {
+        // ====== Deposit ======
+        async function submitDeposit() {
             const kpayName = document.getElementById('depositKpayName').value.trim();
             const txnId = document.getElementById('depositTxnId').value.trim();
             const amount = parseInt(document.getElementById('depositAmount').value);
-            const msgEl = document.getElementById('depositMessage');
 
-            // Validation
-            if (!kpayName) {
-                msgEl.textContent = 'ကျေးဇူးပြု၍ သင့် KPay Name ဖြည့်ပါ';
-                msgEl.className = 'text-sm mt-3 text-center text-red-400';
-                return;
-            }
-            
-            if (!txnId) {
-                msgEl.textContent = 'ကျေးဇူးပြု၍ Transaction ID ဖြည့်ပါ';
-                msgEl.className = 'text-sm mt-3 text-center text-red-400';
-                return;
-            }
-            
-            if (!amount || amount < 1000) {
-                msgEl.textContent = 'အနည်းဆုံး 1000 MMK ဖြည့်ရန်လိုအပ်ပါသည်';
-                msgEl.className = 'text-sm mt-3 text-center text-red-400';
-                return;
-            }
+            if (!kpayName) return showToast('KPay Name ဖြည့်ပါ', 'error');
+            if (!txnId) return showToast('Transaction ID ဖြည့်ပါ', 'error');
+            if (!amount || amount < 1000) return showToast('အနည်းဆုံး 1000 MMK ဖြည့်ပါ', 'error');
+            if (!user) return showToast('ဦးစွာ Login ဝင်ပါ', 'error');
 
-            // Show loading
-            msgEl.textContent = 'တောင်းဆိုမှု ပေးပို့နေသည်...';
-            msgEl.className = 'text-sm mt-3 text-center text-yellow-400';
-
+            setLoading('deposit', true);
             try {
-                const response = await fetch(`${API_URL}/api/deposit`, {
+                const resp = await fetch(`${API_URL}/api/deposit`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        telegramId: user.telegramId,
-                        kpayName,
-                        transactionId: txnId,
-                        amount
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId: user.telegramId, kpayName, transactionId: txnId, amount })
                 });
-                
-                const result = await response.json();
-                
+                const result = await resp.json();
                 if (result.success) {
-                    msgEl.textContent = '✅ တောင်းဆိုမှု အောင်မြင်ပါသည်။ စီမံခန့်ခွဲသူအတည်ပြုရန်စောင့်ပါ။';
-                    msgEl.className = 'text-sm mt-3 text-center text-green-400';
-                    
-                    // Clear form
+                    showToast('✅ တောင်းဆိုမှု အောင်မြင်ပါသည်! Admin အတည်ပြုရန် စောင့်ပါ', 'success', 4000);
                     document.getElementById('depositKpayName').value = '';
                     document.getElementById('depositTxnId').value = '';
                     document.getElementById('depositAmount').value = '';
-                    
-                    // Hide form after 3 seconds
-                    setTimeout(() => {
-                        document.getElementById('depositForm').classList.add('hidden');
-                        msgEl.textContent = '';
-                    }, 3000);
+                    togglePanel('depositPanel');
                 } else {
-                    msgEl.textContent = result.error || 'အမှားရှိနေပါသည်။ နောက်မှပြန်ကြိုးစားပါ။';
-                    msgEl.className = 'text-sm mt-3 text-center text-red-400';
+                    showToast('❌ ' + (result.error || 'Error occurred'), 'error');
                 }
-            } catch (error) {
-                console.error('Deposit error:', error);
-                msgEl.textContent = 'ဆာဗာနဲ့ ချိတ်ဆက်လို့မရပါ။ နောက်မှပြန်ကြိုးစားပါ။';
-                msgEl.className = 'text-sm mt-3 text-center text-red-400';
+            } catch (e) {
+                showToast('❌ ဆာဗာ ချိတ်ဆက်မှု ပျက်ကွက်သည်', 'error');
             }
-        });
+            setLoading('deposit', false);
+        }
 
-        // Submit withdrawal
-        document.getElementById('submitWithdraw').addEventListener('click', async () => {
+        // ====== Withdraw ======
+        async function submitWithdraw() {
             const kpayName = document.getElementById('withdrawKpayName').value.trim();
             const kpayNumber = document.getElementById('withdrawKpayNumber').value.trim();
             const amount = parseInt(document.getElementById('withdrawAmount').value);
-            const msgEl = document.getElementById('withdrawMessage');
 
-            // Validation
-            if (!kpayName) {
-                msgEl.textContent = 'ကျေးဇူးပြု၍ သင့် KPay Name ဖြည့်ပါ';
-                msgEl.className = 'text-sm mt-3 text-center text-red-400';
-                return;
-            }
-            
-            if (!kpayNumber) {
-                msgEl.textContent = 'ကျေးဇူးပြု၍ KPay ဖုန်းနံပါတ် ဖြည့်ပါ';
-                msgEl.className = 'text-sm mt-3 text-center text-red-400';
-                return;
-            }
-            
-            if (!amount || amount < 3000) {
-                msgEl.textContent = 'အနည်းဆုံး 3000 MMK မှထုတ်လို့ရမည်';
-                msgEl.className = 'text-sm mt-3 text-center text-red-400';
-                return;
-            }
+            if (!kpayName) return showToast('KPay Name ဖြည့်ပါ', 'error');
+            if (!kpayNumber) return showToast('KPay ဖုန်းနံပါတ် ဖြည့်ပါ', 'error');
+            if (!amount || amount < 3000) return showToast('အနည်းဆုံး 3000 MMK ထုတ်ယူနိုင်သည်', 'error');
+            if (!user || amount > user.balance) return showToast('လက်ကျန်ငွေ မလုံလောက်ပါ', 'error');
 
-            if (amount > user.balance) {
-                msgEl.textContent = 'လက်ကျန်မလုံလောက်ပါ';
-                msgEl.className = 'text-sm mt-3 text-center text-red-400';
-                return;
-            }
-
-            // Show loading
-            msgEl.textContent = 'တောင်းဆိုမှု ပေးပို့နေသည်...';
-            msgEl.className = 'text-sm mt-3 text-center text-yellow-400';
-
+            setLoading('withdraw', true);
             try {
-                const response = await fetch(`${API_URL}/api/withdraw`, {
+                const resp = await fetch(`${API_URL}/api/withdraw`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        telegramId: user.telegramId,
-                        kpayName,
-                        kpayNumber,
-                        amount
-                    })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ telegramId: user.telegramId, kpayName, kpayNumber, amount })
                 });
-                
-                const result = await response.json();
-                
+                const result = await resp.json();
                 if (result.success) {
-                    msgEl.textContent = '✅ တောင်းဆိုမှု အောင်မြင်ပါသည်။ စီမံခန့်ခွဲသူအတည်ပြုရန်စောင့်ပါ။';
-                    msgEl.className = 'text-sm mt-3 text-center text-green-400';
-                    
-                    // Update local balance
-                    user.balance -= amount;
-                    document.getElementById('balance').textContent = user.balance;
-                    
-                    // Clear form
+                    showToast('✅ တောင်းဆိုမှု အောင်မြင်ပါသည်! Admin အတည်ပြုရန် စောင့်ပါ', 'success', 4000);
                     document.getElementById('withdrawKpayName').value = '';
                     document.getElementById('withdrawKpayNumber').value = '';
                     document.getElementById('withdrawAmount').value = '';
-                    
-                    // Hide form after 3 seconds
-                    setTimeout(() => {
-                        document.getElementById('withdrawForm').classList.add('hidden');
-                        msgEl.textContent = '';
-                    }, 3000);
+                    togglePanel('withdrawPanel');
                 } else {
-                    msgEl.textContent = result.error || 'အမှားရှိနေပါသည်။ နောက်မှပြန်ကြိုးစားပါ။';
-                    msgEl.className = 'text-sm mt-3 text-center text-red-400';
+                    showToast('❌ ' + (result.error || 'Error occurred'), 'error');
                 }
-            } catch (error) {
-                console.error('Withdraw error:', error);
-                msgEl.textContent = 'ဆာဗာနဲ့ ချိတ်ဆက်လို့မရပါ။ နောက်မှပြန်ကြိုးစားပါ။';
-                msgEl.className = 'text-sm mt-3 text-center text-red-400';
+            } catch (e) {
+                showToast('❌ ဆာဗာ ချိတ်ဆက်မှု ပျက်ကွက်သည်', 'error');
             }
-        });
+            setLoading('withdraw', false);
+        }
 
-        // Copy referral link
-        document.getElementById('copyLink').addEventListener('click', () => {
-            const link = document.getElementById('referralLink');
-            link.select();
-            document.execCommand('copy');
-            
-            const copyBtn = document.getElementById('copyLink');
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = '✅ Copied!';
-            copyBtn.classList.add('bg-green-600');
-            
-            setTimeout(() => {
-                copyBtn.textContent = originalText;
-                copyBtn.classList.remove('bg-green-600');
-            }, 2000);
-            
-            tg.showAlert('Referral link copied!');
-        });
+        function setLoading(type, loading) {
+            const btn = document.getElementById(`${type}BtnText`);
+            const spinner = document.getElementById(`${type}Spinner`);
+            if (loading) {
+                btn.style.display = 'none';
+                spinner.style.display = 'inline-block';
+            } else {
+                btn.style.display = 'inline';
+                spinner.style.display = 'none';
+            }
+        }
 
-        // Auto-refresh balance every 30 seconds
+        // Auto-refresh every 60s
         setInterval(async () => {
-            if (user && user.telegramId) {
+            if (user?.telegramId && document.visibilityState === 'visible') {
                 try {
-                    const response = await fetch(`${API_URL}/api/user/${user.telegramId}`);
-                    const data = await response.json();
-                    if (data.balance !== undefined) {
-                        user.balance = data.balance;
-                        document.getElementById('balance').textContent = user.balance;
+                    const r = await fetch(`${API_URL}/api/user/${user.telegramId}`);
+                    const d = await r.json();
+                    if (d.balance !== undefined) {
+                        user.balance = d.balance;
+                        document.getElementById('balance').textContent = d.balance.toLocaleString();
                     }
-                } catch (error) {
-                    console.error('Balance refresh error:', error);
-                }
+                } catch (e) {}
             }
-        }, 30000);
+        }, 60000);
+
+        // Init
+        initAuth();
     </script>
 </body>
 </html>
