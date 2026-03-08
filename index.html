@@ -1,318 +1,376 @@
 <!DOCTYPE html>
-<html lang="my">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>TicToeTic</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');
-    * { box-sizing: border-box; }
-    body { font-family: 'Padauk', sans-serif; background: #080e1a; min-height: 100vh; color: #e2e8f0; }
-    .glass { background: rgba(255,255,255,0.06); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
-    .btn-gold { background: linear-gradient(135deg, #f59e0b, #d97706); box-shadow: 0 8px 24px rgba(245,158,11,0.35); }
-    .btn-cyan { background: linear-gradient(135deg, #06b6d4, #0891b2); box-shadow: 0 8px 24px rgba(6,182,212,0.35); }
-    .btn-play {
-      background: linear-gradient(135deg, #f59e0b, #ef4444);
-      box-shadow: 0 12px 40px rgba(245,158,11,0.5), 0 0 0 0 rgba(245,158,11,0.4);
-      animation: pulse-glow 2s infinite;
-      border-radius: 20px;
-    }
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 12px 40px rgba(245,158,11,0.5), 0 0 0 0 rgba(245,158,11,0.4); }
-      50% { box-shadow: 0 12px 40px rgba(245,158,11,0.6), 0 0 0 12px rgba(245,158,11,0); }
-    }
-    .stat-card { background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; }
-    .hidden { display: none !important; }
-    .modal-overlay { background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); }
-    input[type=number], input[type=text] { outline: none; }
-    input:focus { border-color: rgba(245,158,11,0.5) !important; }
-    .shimmer { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); animation: shimmer 2s infinite; }
-    @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; padding: 12px 24px; border-radius: 12px; font-weight: bold; transition: opacity 0.3s; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicToeTic - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideUp {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-20px); }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .animate-slideDown {
+            animation: slideDown 0.3s ease-out;
+        }
+        .animate-slideUp {
+            animation: slideUp 0.3s ease-out;
+        }
+        .animate-pulse-slow {
+            animation: pulse 2s infinite;
+        }
+        .copy-btn {
+            transition: all 0.2s;
+        }
+        .copy-btn:hover {
+            transform: scale(1.05);
+        }
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
 </head>
-<body class="p-4">
+<body class="bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 min-h-screen p-4">
+    <div class="max-w-md mx-auto">
+        <!-- Header Card -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-6 mb-4 border border-white/20">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-white">🎮 TicToeTic</h1>
+                    <p class="text-purple-200 text-sm mt-1">Play & Earn Money</p>
+                </div>
+                <div class="bg-purple-500/30 rounded-full p-2">
+                    <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+            </div>
+            
+            <!-- User Info -->
+            <div class="bg-white/5 rounded-2xl p-4 mb-4 border border-white/10">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-purple-200">အသုံးပြုသူအမည်</span>
+                    <span id="username" class="text-white font-semibold">-</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-purple-200">လက်ကျန်ငွေ</span>
+                    <div class="flex items-center">
+                        <span id="balance" class="text-2xl font-bold text-green-400">0</span>
+                        <span class="text-green-400 ml-1">MMK</span>
+                    </div>
+                </div>
+            </div>
 
-  <!-- Toast -->
-  <div id="toast" class="toast hidden"></div>
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <button id="depositBtn" class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-4 rounded-xl transition-all transform hover:scale-105 shadow-lg">
+                    💰 ငွေဖြည့်
+                </button>
+                <button id="withdrawBtn" class="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-4 px-4 rounded-xl transition-all transform hover:scale-105 shadow-lg">
+                    💸 ငွေထုတ်
+                </button>
+            </div>
 
-  <div class="w-full max-w-md mx-auto">
+            <!-- Quick Play Button -->
+            <a href="/play.html" class="block w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700 text-white font-bold py-4 px-4 rounded-xl text-center mb-4 transition-all transform hover:scale-105 shadow-lg animate-pulse-slow">
+                🎮 စတင်ကစားရန်
+            </a>
 
-    <!-- Header -->
-    <div class="glass rounded-3xl p-4 mb-4 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-red-600 flex items-center justify-center text-xl font-black">T</div>
-        <div>
-          <p id="usernameDisplay" class="font-bold text-white">-</p>
-          <p class="text-xs text-gray-400">TicToeTic Player</p>
+            <!-- Deposit Form -->
+            <div id="depositForm" class="hidden bg-white/5 rounded-2xl p-4 mb-4 border border-white/10 animate-slideDown">
+                <div class="text-center mb-4">
+                    <div class="bg-yellow-500/20 rounded-lg p-3">
+                        <p class="text-yellow-300 font-mono">💳 KPay: 09792310926</p>
+                        <p class="text-yellow-300 font-mono">👤 Name: Daw Mi Thaung</p>
+                    </div>
+                </div>
+                <input type="text" id="depositKpayName" placeholder="သင့် KPay Name" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl mb-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <input type="text" id="depositTxnId" placeholder="Transaction ID" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl mb-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <input type="number" id="depositAmount" placeholder="ပမာဏ (အနည်းဆုံး 1000)" min="1000" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl mb-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <button id="submitDeposit" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 rounded-xl transition-all">
+                    ✅ အတည်ပြုမည်
+                </button>
+                <p id="depositMessage" class="text-sm mt-3 text-center"></p>
+            </div>
+
+            <!-- Withdraw Form -->
+            <div id="withdrawForm" class="hidden bg-white/5 rounded-2xl p-4 mb-4 border border-white/10 animate-slideDown">
+                <input type="text" id="withdrawKpayName" placeholder="သင့် KPay Name" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl mb-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <input type="text" id="withdrawKpayNumber" placeholder="KPay ဖုန်းနံပါတ်" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl mb-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <input type="number" id="withdrawAmount" placeholder="ပမာဏ (အနည်းဆုံး 3000)" min="3000" class="w-full p-3 bg-white/10 border border-white/20 rounded-xl mb-3 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500">
+                <button id="submitWithdraw" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-3 rounded-xl transition-all">
+                    ✅ အတည်ပြုမည်
+                </button>
+                <p id="withdrawMessage" class="text-sm mt-3 text-center"></p>
+            </div>
+
+            <!-- Referral Section -->
+            <div class="bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-2xl p-4 border border-white/10">
+                <p class="text-purple-200 text-sm mb-2 flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"></path>
+                    </svg>
+                    မိတ်ဆွေဖိတ်ရန် (၁၀၀၀ ဖြည့်တိုင်း ၁၀၀ ရမည်)
+                </p>
+                <div class="flex">
+                    <input type="text" id="referralLink" readonly class="flex-1 p-2 bg-white/10 border border-white/20 rounded-l-xl text-white text-sm" value="">
+                    <button id="copyLink" class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-4 rounded-r-xl copy-btn">
+                        📋 Copy
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-      <div class="text-right">
-        <p class="text-xs text-gray-400">လက်ကျန်ငွေ</p>
-        <p class="font-black text-2xl text-amber-400"><span id="balanceDisplay">-</span></p>
-        <p class="text-xs text-gray-500">ကျပ်</p>
-      </div>
-    </div>
 
-    <!-- Stats Row -->
-    <div class="grid grid-cols-2 gap-3 mb-4">
-      <div class="stat-card p-3 text-center">
-        <p class="text-xs text-gray-400 mb-1">အနိုင်ရမှု</p>
-        <p id="totalWins" class="text-xl font-black text-green-400">-</p>
-      </div>
-      <div class="stat-card p-3 text-center">
-        <p class="text-xs text-gray-400 mb-1">ဂိမ်းကစားမှု</p>
-        <p id="totalGames" class="text-xl font-black text-cyan-400">-</p>
-      </div>
-    </div>
-
-    <!-- Play Button - Rectangle -->
-    <div class="flex justify-center mb-4">
-      <button id="playGameBtn" class="btn-play w-full py-8 flex flex-col items-center justify-center text-black font-black active:scale-95 transition-transform">
-        <div class="flex items-center gap-3 mb-1">
-          <i class="fas fa-play text-3xl"></i>
-          <span class="text-4xl">PLAY</span>
+        <!-- Game Rules Card -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-4 border border-white/20">
+            <h2 class="text-white font-bold mb-2">📜 ဂိမ်းစည်းကမ်းများ</h2>
+            <ul class="text-purple-200 text-sm space-y-1">
+                <li>• 5x5 အကွက်တွင် ၄ ကွက်တန်းလျှင် အနိုင်ရမည်</li>
+                <li>• တစ်ပွဲလျှင် ၁၀၀၀ ကျသင့်မည်</li>
+                <li>• အနိုင်ရသူ ၁၆၀၀ ရမည် (၄၀၀ မှာ Admin ကြေး)</li>
+                <li>• တစ်လှည့်စီ ၅ စက္ကန့်သာ အချိန်ပေးမည်</li>
+                <li>• မိတ်ဆွေဖိတ်လျှင် ၁၀၀၀ ဖြည့်တိုင်း ၁၀၀ ရမည်</li>
+            </ul>
         </div>
-        <span class="text-sm opacity-80 font-bold">ကြေး ၁၀၀၀ ကျပ် · ဆု ၁၆၀၀ ကျပ်</span>
-      </button>
     </div>
 
-    <!-- Action Buttons -->
-    <div class="grid grid-cols-2 gap-3 mb-4">
-      <button id="showDepositBtn" class="btn-gold rounded-2xl py-5 flex flex-col items-center gap-2 text-black font-bold active:scale-95 transition-transform">
-        <i class="fas fa-plus-circle text-2xl"></i>
-        <span>ငွေဖြည့်ရန်</span>
-      </button>
-      <button id="showWithdrawBtn" class="btn-cyan rounded-2xl py-5 flex flex-col items-center gap-2 text-black font-bold active:scale-95 transition-transform">
-        <i class="fas fa-minus-circle text-2xl"></i>
-        <span>ငွေထုတ်ရန်</span>
-      </button>
-    </div>
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.ready();
 
-    <!-- Referral Card -->
-    <div class="glass rounded-2xl p-4 mb-4">
-      <div class="flex justify-between items-center mb-2">
-        <div class="flex items-center gap-2">
-          <i class="fas fa-users text-amber-400"></i>
-          <span class="font-bold">မိတ်ဆက်မိတ်ဆွေ</span>
-        </div>
-        <span class="bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full text-sm font-bold"><span id="referralCount">0</span> ယောက်</span>
-      </div>
-      <p class="text-xs text-gray-400 mb-3">မိတ်ဆွေတစ်ယောက် ငွေဖြည့်တိုင်း ၁၀၀ ကျပ် ရမည်</p>
-      <!-- Share to Telegram Contacts -->
-      <button id="shareTelegramBtn" class="w-full bg-[#229ED9]/20 hover:bg-[#229ED9]/30 border border-[#229ED9]/30 rounded-xl py-3 flex items-center justify-center gap-2 transition font-bold text-[#229ED9] active:scale-95">
-        <i class="fab fa-telegram text-xl"></i>
-        Telegram မှတ်ဆွေများထံ ဖိတ်ကြားရန်
-      </button>
-    </div>
+        let user = null;
+        let balance = 0;
 
-    <!-- How to Play -->
-    <div class="glass rounded-2xl p-4">
-      <div class="flex items-center gap-2 mb-3">
-        <i class="fas fa-info-circle text-cyan-400"></i>
-        <span class="font-bold">ကစားနည်း</span>
-      </div>
-      <div class="space-y-2 text-sm text-gray-300">
-        <div class="flex gap-2"><span class="text-amber-400 font-bold">1.</span><span>5x5 ကွက်ပေါ်တွင် ကျောင်း 4 ချောင်း တန်းစီမျဉ်းရလျှင် အနိုင်</span></div>
-        <div class="flex gap-2"><span class="text-amber-400 font-bold">2.</span><span>Player မရှိပါက Bot နှင့် အလိုအလျောက် ကစားမည်</span></div>
-        <div class="flex gap-2"><span class="text-amber-400 font-bold">3.</span><span>အနိုင်ရပါက ၁၆၀၀ ကျပ် ရမည်</span></div>
-      </div>
-    </div>
+        // Initialize user data
+        (async function() {
+            try {
+                const initData = tg.initData;
+                console.log('Init data:', initData);
+                
+                const response = await fetch('https://tiktocbackend.onrender.com/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ initData })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Auth failed');
+                }
+                
+                user = await response.json();
+                console.log('User:', user);
+                
+                if (user.error) {
+                    tg.showAlert('Authentication failed: ' + user.error);
+                    return;
+                }
+                
+                document.getElementById('username').textContent = user.username || 'User' + user.telegramId;
+                document.getElementById('balance').textContent = user.balance;
+                balance = user.balance;
 
-  </div>
+                // Set referral link
+                const botUsername = 'tictoe1_bot';
+                const referralLink = `https://t.me/${botUsername}?start=${user.referralCode}`;
+                document.getElementById('referralLink').value = referralLink;
+            } catch (error) {
+                console.error('Auth error:', error);
+                tg.showAlert('Connection error. Please try again.');
+            }
+        })();
 
-  <!-- Deposit Modal -->
-  <div id="depositModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center p-4 z-50">
-    <div class="glass rounded-3xl p-6 w-full max-w-sm">
-      <div class="flex items-center justify-between mb-5">
-        <h2 class="text-xl font-black text-amber-400 flex items-center gap-2"><i class="fas fa-plus-circle"></i> ငွေဖြည့်ရန်</h2>
-        <button id="closeDeposit" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20"><i class="fas fa-times text-sm"></i></button>
-      </div>
-      <div class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-4">
-        <p class="text-xs text-gray-400 mb-1">KPay ဖြည့်ရမည့် နံပါတ်</p>
-        <p class="font-mono font-bold text-lg text-amber-400">09792310926</p>
-        <p class="text-sm text-gray-300">Daw Mi Thaung</p>
-      </div>
-      <input type="text" id="depositKpayName" placeholder="သင့် KPay နာမည်" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-3 text-white placeholder-gray-500 focus:border-amber-500/50 transition">
-      <input type="text" id="depositTxnId" placeholder="Transaction ID" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-3 text-white placeholder-gray-500 focus:border-amber-500/50 transition">
-      <input type="number" id="depositAmount" placeholder="ပမာဏ (အနည်းဆုံး ၁၀၀၀)" min="1000" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-4 text-white placeholder-gray-500 focus:border-amber-500/50 transition">
-      <div class="flex gap-3">
-        <button id="submitDeposit" class="flex-1 btn-gold text-black font-black py-3 rounded-xl active:scale-95 transition-transform">တောင်းဆိုမည်</button>
-        <button id="closeDeposit2" class="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-xl transition">ပိတ်မည်</button>
-      </div>
-      <p id="depositMessage" class="text-sm text-center mt-3 hidden"></p>
-    </div>
-  </div>
-
-  <!-- Withdraw Modal -->
-  <div id="withdrawModal" class="hidden fixed inset-0 modal-overlay flex items-center justify-center p-4 z-50">
-    <div class="glass rounded-3xl p-6 w-full max-w-sm">
-      <div class="flex items-center justify-between mb-5">
-        <h2 class="text-xl font-black text-cyan-400 flex items-center gap-2"><i class="fas fa-minus-circle"></i> ငွေထုတ်ရန်</h2>
-        <button id="closeWithdraw" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20"><i class="fas fa-times text-sm"></i></button>
-      </div>
-      <input type="text" id="withdrawKpayName" placeholder="KPay နာမည်" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-3 text-white placeholder-gray-500 focus:border-cyan-500/50 transition">
-      <input type="text" id="withdrawPhone" placeholder="ဖုန်းနံပါတ်" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-3 text-white placeholder-gray-500 focus:border-cyan-500/50 transition">
-      <input type="number" id="withdrawAmount" placeholder="ပမာဏ (အနည်းဆုံး ၃၀၀၀)" min="3000" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 mb-4 text-white placeholder-gray-500 focus:border-cyan-500/50 transition">
-      <div class="flex gap-3">
-        <button id="submitWithdraw" class="flex-1 btn-cyan text-black font-black py-3 rounded-xl active:scale-95 transition-transform">တောင်းဆိုမည်</button>
-        <button id="closeWithdraw2" class="flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-xl transition">ပိတ်မည်</button>
-      </div>
-      <p id="withdrawMessage" class="text-sm text-center mt-3 hidden"></p>
-    </div>
-  </div>
-
-  <script>
-    const tg = window.Telegram?.WebApp;
-    if (tg) { tg.expand(); tg.ready(); tg.setHeaderColor('#080e1a'); }
-
-    const BACKEND_URL = 'https://your-backend.onrender.com'; // ← Render URL ပြောင်းပါ
-    const BOT_USERNAME = 'YOUR_BOT_USERNAME'; // ← Bot username ပြောင်းပါ
-    const socket = io(BACKEND_URL, { transports: ['websocket', 'polling'] });
-    const initData = tg?.initDataUnsafe?.user;
-    const telegramId = initData?.id?.toString() || 'test_' + Math.random().toString(36).substr(2,6);
-    const username = initData?.username || initData?.first_name || 'User';
-
-    // DOM
-    const $ = id => document.getElementById(id);
-    $('usernameDisplay').textContent = username;
-
-    // Toast helper
-    function showToast(msg, type = 'success') {
-      const t = $('toast');
-      t.textContent = msg;
-      t.className = `toast ${type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600'} text-white`;
-      t.classList.remove('hidden');
-      setTimeout(() => t.classList.add('hidden'), 3000);
-    }
-
-    // Socket events
-    socket.on('connect', () => socket.emit('authenticate', { telegramId }));
-    socket.on('disconnect', () => { /* auto reconnect */ });
-
-    socket.on('authenticated', (data) => {
-      $('balanceDisplay').textContent = data.balance?.toLocaleString() || 0;
-      $('referralCount').textContent = data.referralCount || 0;
-      $('totalWins').textContent = data.totalWins || 0;
-      $('totalGames').textContent = data.totalGames || 0;
-    });
-
-    socket.on('balanceUpdate', (data) => {
-      if (data.telegramId === telegramId) {
-        $('balanceDisplay').textContent = data.balance?.toLocaleString() || 0;
-      }
-    });
-
-    // Deposit
-    $('showDepositBtn').onclick = () => { $('depositModal').classList.remove('hidden'); };
-    $('closeDeposit').onclick = () => closeDepositModal();
-    $('closeDeposit2').onclick = () => closeDepositModal();
-    function closeDepositModal() {
-      $('depositModal').classList.add('hidden');
-      ['depositKpayName','depositTxnId','depositAmount'].forEach(id => $(id).value = '');
-      hideMsg('depositMessage');
-    }
-
-    $('submitDeposit').onclick = () => {
-      const kpayName = $('depositKpayName').value.trim();
-      const txnId = $('depositTxnId').value.trim();
-      const amount = parseInt($('depositAmount').value);
-      if (!kpayName || !txnId || !amount) return showMsg('depositMessage', 'အချက်အလက် အားလုံး ဖြည့်ပါ။', 'error');
-      if (amount < 1000) return showMsg('depositMessage', 'အနည်းဆုံး ၁၀၀၀ ကျပ် ဖြည့်ပါ။', 'error');
-      $('submitDeposit').disabled = true;
-      socket.emit('requestDeposit', { telegramId, kpayName, transactionId: txnId, amount });
-    };
-
-    socket.on('depositSuccess', (msg) => {
-      showMsg('depositMessage', '✅ ' + msg, 'success');
-      $('submitDeposit').disabled = false;
-      setTimeout(() => closeDepositModal(), 2500);
-    });
-    socket.on('depositError', (err) => { showMsg('depositMessage', '❌ ' + err, 'error'); $('submitDeposit').disabled = false; });
-
-    // Withdraw
-    $('showWithdrawBtn').onclick = () => $('withdrawModal').classList.remove('hidden');
-    $('closeWithdraw').onclick = () => closeWithdrawModal();
-    $('closeWithdraw2').onclick = () => closeWithdrawModal();
-    function closeWithdrawModal() {
-      $('withdrawModal').classList.add('hidden');
-      ['withdrawKpayName','withdrawPhone','withdrawAmount'].forEach(id => $(id).value = '');
-      hideMsg('withdrawMessage');
-    }
-
-    $('submitWithdraw').onclick = () => {
-      const kpayName = $('withdrawKpayName').value.trim();
-      const phone = $('withdrawPhone').value.trim();
-      const amount = parseInt($('withdrawAmount').value);
-      if (!kpayName || !phone || !amount) return showMsg('withdrawMessage', 'အချက်အလက် အားလုံး ဖြည့်ပါ။', 'error');
-      if (amount < 3000) return showMsg('withdrawMessage', 'အနည်းဆုံး ၃၀၀၀ ကျပ် ထုတ်ပါ။', 'error');
-      $('submitWithdraw').disabled = true;
-      socket.emit('requestWithdraw', { telegramId, kpayName, phoneNumber: phone, amount });
-    };
-
-    socket.on('withdrawSuccess', (msg) => {
-      showMsg('withdrawMessage', '✅ ' + msg, 'success');
-      $('submitWithdraw').disabled = false;
-      setTimeout(() => closeWithdrawModal(), 2500);
-    });
-    socket.on('withdrawError', (err) => { showMsg('withdrawMessage', '❌ ' + err, 'error'); $('submitWithdraw').disabled = false; });
-
-    // Share to Telegram contacts (Telegram native share)
-    $('shareTelegramBtn').onclick = () => {
-      const referralLink = `https://t.me/${BOT_USERNAME}?start=${telegramId}`;
-      const shareText = `🎮 TicToeTic ဂိမ်းကစားပြီး ငွေရှာကြစို့!\n5x5 Tic-Tac-Toe ဂိမ်း\nအနိုင်ရပါက ၁၆၀၀ ကျပ် ရမည်!\n\n${referralLink}`;
-
-      if (tg?.shareMessage) {
-        // Telegram native share to contacts
-        tg.shareMessage({ text: shareText });
-      } else if (tg?.openTelegramLink) {
-        // Share via Telegram forward URL  
-        const encodedText = encodeURIComponent(shareText);
-        tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent('🎮 TicToeTic - ဂိမ်းကစားပြီး ငွေရှာကြစို့!')}`);
-      } else {
-        // Fallback: copy link
-        navigator.clipboard.writeText(referralLink).then(() => showToast('မိတ်ဆက်လင့်ခ် ကူးယူပြီး!', 'success')).catch(() => {
-          // Final fallback
-          const ta = document.createElement('textarea');
-          ta.value = referralLink;
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand('copy');
-          document.body.removeChild(ta);
-          showToast('မိတ်ဆက်လင့်ခ် ကူးယူပြီး!', 'success');
+        // Toggle deposit form with animation
+        document.getElementById('depositBtn').addEventListener('click', () => {
+            const depositForm = document.getElementById('depositForm');
+            const withdrawForm = document.getElementById('withdrawForm');
+            
+            if (depositForm.classList.contains('hidden')) {
+                depositForm.classList.remove('hidden');
+                depositForm.classList.add('animate-slideDown');
+                withdrawForm.classList.add('hidden');
+            } else {
+                depositForm.classList.add('hidden');
+            }
         });
-      }
-    };
 
-    // Play game
-    $('playGameBtn').onclick = () => {
-      $('playGameBtn').disabled = true;
-      $('playGameBtn').innerHTML = '<i class="fas fa-spinner fa-spin text-3xl"></i><span class="text-xl mt-2">ရှာနေသည်...</span>';
-      socket.emit('startGame', { telegramId });
-    };
+        // Toggle withdraw form with animation
+        document.getElementById('withdrawBtn').addEventListener('click', () => {
+            const withdrawForm = document.getElementById('withdrawForm');
+            const depositForm = document.getElementById('depositForm');
+            
+            if (withdrawForm.classList.contains('hidden')) {
+                withdrawForm.classList.remove('hidden');
+                withdrawForm.classList.add('animate-slideDown');
+                depositForm.classList.add('hidden');
+            } else {
+                withdrawForm.classList.add('hidden');
+            }
+        });
 
-    socket.on('gameError', (msg) => {
-      $('playGameBtn').disabled = false;
-      $('playGameBtn').innerHTML = '<div class="flex items-center gap-3 mb-1"><i class="fas fa-play text-3xl"></i><span class="text-4xl">PLAY</span></div><span class="text-sm opacity-80 font-bold">ကြေး ၁၀၀၀ ကျပ် · ဆု ၁၆၀၀ ကျပ်</span>';
-      showToast(msg, 'error');
-    });
+        // Submit deposit
+        document.getElementById('submitDeposit').addEventListener('click', async () => {
+            const kpayName = document.getElementById('depositKpayName').value.trim();
+            const txnId = document.getElementById('depositTxnId').value.trim();
+            const amount = parseInt(document.getElementById('depositAmount').value);
+            const msgEl = document.getElementById('depositMessage');
 
-    socket.on('gameStarted', (data) => {
-      $('balanceDisplay').textContent = data.balance?.toLocaleString() || 0;
-      window.location.href = `/play.html?gameId=${data.gameId}`;
-    });
+            if (!kpayName || !txnId || !amount) {
+                msgEl.textContent = 'ကျေးဇူးပြု၍ အချက်အလက်အားလုံးဖြည့်ပါ';
+                msgEl.classList.add('text-red-400');
+                return;
+            }
 
-    function showMsg(id, msg, type) {
-      const el = $(id);
-      el.textContent = msg;
-      el.className = `text-sm text-center mt-3 ${type === 'success' ? 'text-green-400' : 'text-red-400'}`;
-      el.classList.remove('hidden');
-    }
-    function hideMsg(id) { $(id).classList.add('hidden'); }
-  </script>
+            if (amount < 1000) {
+                msgEl.textContent = 'အနည်းဆုံး 1000 ဖြည့်ရန်လိုအပ်ပါသည်';
+                msgEl.classList.add('text-red-400');
+                return;
+            }
+
+            try {
+                const response = await fetch('https://tiktocbackend.onrender.com/api/deposit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        telegramId: user.telegramId,
+                        kpayName,
+                        transactionId: txnId,
+                        amount
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    msgEl.textContent = '✅ တောင်းဆိုမှု အောင်မြင်ပါသည်။ စီမံခန့်ခွဲသူအတည်ပြုရန်စောင့်ပါ။';
+                    msgEl.classList.remove('text-red-400');
+                    msgEl.classList.add('text-green-400');
+                    
+                    // Clear form
+                    document.getElementById('depositKpayName').value = '';
+                    document.getElementById('depositTxnId').value = '';
+                    document.getElementById('depositAmount').value = '';
+                    
+                    // Hide form after 3 seconds
+                    setTimeout(() => {
+                        document.getElementById('depositForm').classList.add('hidden');
+                        msgEl.textContent = '';
+                    }, 3000);
+                } else {
+                    msgEl.textContent = result.error || 'အမှားရှိနေပါသည်။';
+                    msgEl.classList.add('text-red-400');
+                }
+            } catch (error) {
+                console.error('Deposit error:', error);
+                msgEl.textContent = 'ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်';
+                msgEl.classList.add('text-red-400');
+            }
+        });
+
+        // Submit withdrawal
+        document.getElementById('submitWithdraw').addEventListener('click', async () => {
+            const kpayName = document.getElementById('withdrawKpayName').value.trim();
+            const kpayNumber = document.getElementById('withdrawKpayNumber').value.trim();
+            const amount = parseInt(document.getElementById('withdrawAmount').value);
+            const msgEl = document.getElementById('withdrawMessage');
+
+            if (!kpayName || !kpayNumber || !amount) {
+                msgEl.textContent = 'ကျေးဇူးပြု၍ အချက်အလက်အားလုံးဖြည့်ပါ';
+                msgEl.classList.add('text-red-400');
+                return;
+            }
+
+            if (amount < 3000) {
+                msgEl.textContent = 'အနည်းဆုံး 3000 မှထုတ်လို့ရမည်';
+                msgEl.classList.add('text-red-400');
+                return;
+            }
+
+            if (amount > balance) {
+                msgEl.textContent = 'လက်ကျန်မလုံလောက်ပါ';
+                msgEl.classList.add('text-red-400');
+                return;
+            }
+
+            try {
+                const response = await fetch('https://tiktocbackend.onrender.com/api/withdraw', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        telegramId: user.telegramId,
+                        kpayName,
+                        kpayNumber,
+                        amount
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    msgEl.textContent = '✅ တောင်းဆိုမှု အောင်မြင်ပါသည်။ စီမံခန့်ခွဲသူအတည်ပြုရန်စောင့်ပါ။';
+                    msgEl.classList.remove('text-red-400');
+                    msgEl.classList.add('text-green-400');
+                    
+                    // Update local balance
+                    balance -= amount;
+                    document.getElementById('balance').textContent = balance;
+                    
+                    // Clear form
+                    document.getElementById('withdrawKpayName').value = '';
+                    document.getElementById('withdrawKpayNumber').value = '';
+                    document.getElementById('withdrawAmount').value = '';
+                    
+                    // Hide form after 3 seconds
+                    setTimeout(() => {
+                        document.getElementById('withdrawForm').classList.add('hidden');
+                        msgEl.textContent = '';
+                    }, 3000);
+                } else {
+                    msgEl.textContent = result.error || 'အမှားရှိနေပါသည်။';
+                    msgEl.classList.add('text-red-400');
+                }
+            } catch (error) {
+                console.error('Withdraw error:', error);
+                msgEl.textContent = 'ဆာဗာချိတ်ဆက်မှု အမှားရှိနေပါသည်';
+                msgEl.classList.add('text-red-400');
+            }
+        });
+
+        // Copy referral link
+        document.getElementById('copyLink').addEventListener('click', () => {
+            const link = document.getElementById('referralLink');
+            link.select();
+            document.execCommand('copy');
+            
+            const copyBtn = document.getElementById('copyLink');
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '✅ Copied!';
+            copyBtn.classList.add('bg-green-600');
+            
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+                copyBtn.classList.remove('bg-green-600');
+            }, 2000);
+            
+            tg.showAlert('Referral link copied!');
+        });
+
+        // Close forms when clicking outside (optional)
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#depositForm') && !e.target.closest('#depositBtn')) {
+                // Don't auto-close, let user close manually
+            }
+        });
+    </script>
 </body>
 </html>
