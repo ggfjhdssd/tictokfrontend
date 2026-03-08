@@ -1,546 +1,376 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="my">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TicToeTic - Admin Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>TicToeTic - Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-slideIn {
-            animation: slideIn 0.3s ease-out;
-        }
-        .tab-active {
-            border-bottom: 3px solid #8B5CF6;
-            color: #8B5CF6;
-            font-weight: 600;
-        }
-        .loading-spinner {
-            border: 3px solid rgba(139, 92, 246, 0.3);
-            border-radius: 50%;
-            border-top: 3px solid #8B5CF6;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        * { font-family: 'Nunito', sans-serif; box-sizing: border-box; }
+        body { background: #0f0c29; min-height: 100vh; }
+        .bg-anim { background: linear-gradient(135deg, #0f0c29, #1a1a3e, #0d0d1a); position: fixed; inset: 0; z-index: -1; }
+        .glass { background: rgba(255,255,255,0.07); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; }
+        .glass-light { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; }
+        .btn { font-weight: 800; border-radius: 10px; padding: 10px 16px; cursor: pointer; border: none; transition: all 0.2s; }
+        .btn:active { transform: scale(0.96); }
+        .btn-green { background: linear-gradient(135deg, #11998e, #38ef7d); color: #fff; }
+        .btn-red { background: linear-gradient(135deg, #eb3349, #f45c43); color: #fff; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+        .tab { padding: 10px 16px; font-weight: 800; color: rgba(255,255,255,0.5); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; white-space: nowrap; }
+        .tab.active { color: #a78bfa; border-bottom-color: #a78bfa; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .spin-anim { animation: spin 1s linear infinite; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        .spinner { width: 24px; height: 24px; border: 3px solid rgba(167,139,250,0.2); border-top: 3px solid #a78bfa; border-radius: 50%; }
+        .stat-card { border-radius: 16px; padding: 16px; }
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; }
+        .badge-pending { background: rgba(251,191,36,0.15); color: #fde68a; border: 1px solid rgba(251,191,36,0.3); }
+        .badge-confirmed { background: rgba(52,211,153,0.15); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.3); }
+        .badge-rejected { background: rgba(248,113,113,0.15); color: #fca5a5; border: 1px solid rgba(248,113,113,0.3); }
+        .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+
+        #toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 1000; }
+        .toast-box { padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+        .toast-success { background: linear-gradient(135deg, #11998e, #38ef7d); color: #fff; }
+        .toast-error { background: linear-gradient(135deg, #eb3349, #f45c43); color: #fff; }
     </style>
 </head>
-<body class="bg-gradient-to-br from-gray-900 to-gray-800 min-h-screen p-4">
-    <div class="max-w-4xl mx-auto">
+<body>
+    <div class="bg-anim"></div>
+    <div id="toast" style="display:none;"><div class="toast-box" id="toastBox"></div></div>
+
+    <!-- Reject Modal -->
+    <div id="rejectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+        <div class="glass p-6 w-full max-w-sm">
+            <h3 class="text-white font-black text-lg mb-4">❌ ငြင်းပယ်အကြောင်းပြချက်</h3>
+            <textarea id="rejectReason" class="w-full p-3 rounded-xl mb-4 text-white text-sm" rows="3"
+                style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);outline:none;resize:none;"
+                placeholder="အကြောင်းပြချက် (ချန်လှပ်နိုင်သည်)"></textarea>
+            <div class="flex gap-3">
+                <button onclick="closeRejectModal()" class="btn btn-primary flex-1">မပယ်တော့</button>
+                <button onclick="confirmReject()" class="btn btn-red flex-1">❌ ငြင်းပယ်မည်</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-2xl mx-auto p-4 pb-8">
+        
         <!-- Header -->
-        <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-6 mb-6 border border-white/20">
-            <div class="flex items-center justify-between">
+        <div class="glass p-5 mb-4 fade-in">
+            <div class="flex items-center justify-between mb-3">
                 <div>
-                    <h1 class="text-3xl font-bold text-white">👑 Admin Panel</h1>
-                    <p class="text-purple-200 mt-2">စီမံခန့်ခွဲသူ ထိန်းချုပ်ခန်း</p>
+                    <h1 class="text-white font-black text-2xl">👑 Admin Panel</h1>
+                    <p class="text-xs mt-1" style="color:rgba(255,255,255,0.5);">TicToeTic Management</p>
                 </div>
-                <div class="bg-purple-500/30 rounded-full p-3">
-                    <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"></path>
-                    </svg>
-                </div>
+                <button onclick="loadAll()" class="p-2 rounded-xl" style="background:rgba(255,255,255,0.08);" id="refreshBtn">
+                    <span id="refreshIcon">🔄</span>
+                </button>
             </div>
-            
-            <!-- Connection Status -->
-            <div id="connectionStatus" class="hidden mt-4 bg-yellow-500/20 border border-yellow-500 rounded-lg p-3 text-yellow-300 text-sm text-center">
-                <span class="inline-flex items-center">
-                    <span class="loading-spinner w-4 h-4 mr-2"></span>
-                    ချိတ်ဆက်နေသည်...
-                </span>
-            </div>
-            
-            <!-- Error Message -->
-            <div id="errorMessage" class="hidden mt-4 bg-red-500/20 border border-red-500 rounded-lg p-3 text-red-300 text-sm text-center">
+            <div id="authStatus" class="text-yellow-300 text-sm text-center py-2">
+                <div class="spinner spin-anim mx-auto mb-2"></div>
+                Loading...
             </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white">
-                <p class="text-sm opacity-90">စုစုပေါင်းအသုံးပြုသူ</p>
-                <p id="totalUsers" class="text-2xl font-bold">0</p>
+        <!-- Stats -->
+        <div class="grid grid-cols-2 gap-3 mb-4" id="statsGrid" style="display:none;">
+            <div class="stat-card" style="background:linear-gradient(135deg,rgba(59,130,246,0.2),rgba(37,99,235,0.1));border:1px solid rgba(59,130,246,0.3);">
+                <div class="text-xs mb-1" style="color:rgba(255,255,255,0.6);">👥 စုစုပေါင်းသုံးသူ</div>
+                <div class="text-2xl font-black text-blue-300" id="statUsers">0</div>
             </div>
-            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-4 text-white">
-                <p class="text-sm opacity-90">ငွေသွင်းမှုများ</p>
-                <p id="totalDeposits" class="text-2xl font-bold">0</p>
+            <div class="stat-card" style="background:linear-gradient(135deg,rgba(52,211,153,0.2),rgba(16,185,129,0.1));border:1px solid rgba(52,211,153,0.3);">
+                <div class="text-xs mb-1" style="color:rgba(255,255,255,0.6);">🎮 ပြီးသောဂိမ်း</div>
+                <div class="text-2xl font-black text-green-300" id="statGames">0</div>
             </div>
-            <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl p-4 text-white">
-                <p class="text-sm opacity-90">စုစုပေါင်းငွေသွင်း</p>
-                <p id="totalDepositAmount" class="text-2xl font-bold">0</p>
+            <div class="stat-card" style="background:linear-gradient(135deg,rgba(251,191,36,0.2),rgba(245,158,11,0.1));border:1px solid rgba(251,191,36,0.3);">
+                <div class="text-xs mb-1" style="color:rgba(255,255,255,0.6);">💰 စောင့်ဆိုင်းငွေသွင်း</div>
+                <div class="text-2xl font-black text-yellow-300" id="statPendingDep">0</div>
             </div>
-            <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-4 text-white">
-                <p class="text-sm opacity-90">စုစုပေါင်းငွေထုတ်</p>
-                <p id="totalWithdrawalAmount" class="text-2xl font-bold">0</p>
+            <div class="stat-card" style="background:linear-gradient(135deg,rgba(248,113,113,0.2),rgba(239,68,68,0.1));border:1px solid rgba(248,113,113,0.3);">
+                <div class="text-xs mb-1" style="color:rgba(255,255,255,0.6);">💸 စောင့်ဆိုင်းငွေထုတ်</div>
+                <div class="text-2xl font-black text-red-300" id="statPendingWith">0</div>
             </div>
         </div>
 
         <!-- Tabs -->
-        <div class="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-6 border border-white/20">
-            <div class="flex space-x-4 border-b border-white/20 mb-6 overflow-x-auto">
-                <button id="tabDeposits" class="tab-btn px-4 py-2 text-white font-semibold transition-all tab-active whitespace-nowrap">
-                    💰 ငွေသွင်းရန် စောင့်ဆိုင်း
-                </button>
-                <button id="tabWithdrawals" class="tab-btn px-4 py-2 text-white/70 hover:text-white font-semibold transition-all whitespace-nowrap">
-                    💸 ငွေထုတ်ရန် စောင့်ဆိုင်း
-                </button>
-                <button id="tabHistory" class="tab-btn px-4 py-2 text-white/70 hover:text-white font-semibold transition-all whitespace-nowrap">
-                    📋 မှတ်တမ်း
-                </button>
+        <div class="glass fade-in">
+            <div class="flex border-b overflow-x-auto" style="border-color:rgba(255,255,255,0.1);">
+                <div class="tab active" onclick="switchTab('deposits')" id="tabDeposits">💰 ငွေသွင်း</div>
+                <div class="tab" onclick="switchTab('withdrawals')" id="tabWithdrawals">💸 ငွေထုတ်</div>
             </div>
 
-            <!-- Loading Indicator -->
-            <div id="loadingIndicator" class="hidden text-center py-8">
-                <div class="loading-spinner mx-auto mb-4"></div>
-                <p class="text-purple-300">ဒေတာများ ရယူနေသည်...</p>
-            </div>
-
-            <!-- Deposits Tab Content -->
-            <div id="depositsContent" class="tab-content">
-                <h2 class="text-xl font-bold text-white mb-4">🕒 ငွေသွင်းရန် စောင့်ဆိုင်းနေသော တောင်းဆိုမှုများ</h2>
-                <div id="depositsList" class="space-y-3">
-                    <!-- Dynamic content -->
+            <div class="p-4">
+                <!-- Loading -->
+                <div id="loadingDiv" class="text-center py-8">
+                    <div class="spinner spin-anim mx-auto mb-3"></div>
+                    <p class="text-xs" style="color:rgba(255,255,255,0.5);">ဒေတာများ ရယူနေသည်...</p>
                 </div>
-            </div>
 
-            <!-- Withdrawals Tab Content -->
-            <div id="withdrawalsContent" class="tab-content hidden">
-                <h2 class="text-xl font-bold text-white mb-4">🕒 ငွေထုတ်ရန် စောင့်ဆိုင်းနေသော တောင်းဆိုမှုများ</h2>
-                <div id="withdrawalsList" class="space-y-3">
-                    <!-- Dynamic content -->
+                <!-- Deposits -->
+                <div id="depositsContent" style="display:none;">
+                    <div id="depositsList"></div>
                 </div>
-            </div>
 
-            <!-- History Tab Content -->
-            <div id="historyContent" class="tab-content hidden">
-                <h2 class="text-xl font-bold text-white mb-4">📋 အတည်ပြုပြီးသော မှတ်တမ်းများ</h2>
-                <div id="historyList" class="space-y-3">
-                    <p class="text-center text-purple-300 py-8">မှတ်တမ်း ရယူနေသည်...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Reject Modal -->
-        <div id="rejectModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-            <div class="bg-gray-800 rounded-2xl p-6 max-w-md w-full">
-                <h3 class="text-xl font-bold text-white mb-4">ငြင်းပယ်ရန် အကြောင်းပြချက်</h3>
-                <textarea id="rejectReason" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-xl text-white mb-4" rows="3" placeholder="အကြောင်းပြချက် ရိုက်ထည့်ပါ..."></textarea>
-                <div class="flex space-x-3">
-                    <button id="confirmReject" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 rounded-lg transition-all">
-                        ငြင်းပယ်မည်
-                    </button>
-                    <button id="cancelReject" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded-lg transition-all">
-                        ပယ်ဖျက်မည်
-                    </button>
+                <!-- Withdrawals -->
+                <div id="withdrawalsContent" style="display:none;">
+                    <div id="withdrawalsList"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.ready();
+        const tg = window.Telegram?.WebApp;
+        if (tg) { tg.expand(); tg.ready(); }
 
         const API_URL = 'https://tiktocbackend.onrender.com';
-        const adminId = tg.initDataUnsafe?.user?.id;
-        
-        let currentAction = null;
-        let currentId = null;
+        let adminId = null;
+        let currentTab = 'deposits';
+        let rejectType = null;
+        let rejectId = null;
 
-        if (!adminId) {
-            tg.showAlert('Authentication failed');
+        // Toast
+        let toastTimer;
+        function showToast(msg, type = 'info', dur = 3000) {
+            const t = document.getElementById('toast');
+            const b = document.getElementById('toastBox');
+            b.textContent = msg;
+            b.className = `toast-box toast-${type}`;
+            t.style.display = 'block';
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.style.display = 'none', dur);
         }
 
-        // UI Helpers
-        function showLoading(show) {
-            const loader = document.getElementById('loadingIndicator');
-            if (show) {
-                loader.classList.remove('hidden');
-            } else {
-                loader.classList.add('hidden');
-            }
+        // Tab
+        function switchTab(tab) {
+            currentTab = tab;
+            ['deposits', 'withdrawals'].forEach(t => {
+                document.getElementById(`tab${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.toggle('active', t === tab);
+                document.getElementById(`${t}Content`).style.display = t === tab ? 'block' : 'none';
+            });
         }
 
-        function showError(message) {
-            const errorEl = document.getElementById('errorMessage');
-            errorEl.textContent = message;
-            errorEl.classList.remove('hidden');
-            
-            setTimeout(() => {
-                errorEl.classList.add('hidden');
-            }, 5000);
-        }
-
-        // Load all data
-        loadPending();
-        loadStats();
-        loadHistory();
-
-        // Tabs
-        document.getElementById('tabDeposits').addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('tab-active', 'text-white');
-                btn.classList.add('text-white/70');
-            });
-            document.getElementById('tabDeposits').classList.add('tab-active', 'text-white');
-            document.getElementById('tabDeposits').classList.remove('text-white/70');
-            
-            document.getElementById('depositsContent').classList.remove('hidden');
-            document.getElementById('withdrawalsContent').classList.add('hidden');
-            document.getElementById('historyContent').classList.add('hidden');
-        });
-
-        document.getElementById('tabWithdrawals').addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('tab-active', 'text-white');
-                btn.classList.add('text-white/70');
-            });
-            document.getElementById('tabWithdrawals').classList.add('tab-active', 'text-white');
-            document.getElementById('tabWithdrawals').classList.remove('text-white/70');
-            
-            document.getElementById('withdrawalsContent').classList.remove('hidden');
-            document.getElementById('depositsContent').classList.add('hidden');
-            document.getElementById('historyContent').classList.add('hidden');
-        });
-
-        document.getElementById('tabHistory').addEventListener('click', () => {
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('tab-active', 'text-white');
-                btn.classList.add('text-white/70');
-            });
-            document.getElementById('tabHistory').classList.add('tab-active', 'text-white');
-            document.getElementById('tabHistory').classList.remove('text-white/70');
-            
-            document.getElementById('historyContent').classList.remove('hidden');
-            document.getElementById('depositsContent').classList.add('hidden');
-            document.getElementById('withdrawalsContent').classList.add('hidden');
-        });
-
-        // Load pending requests
-        async function loadPending() {
-            showLoading(true);
-            
+        // Init
+        async function init() {
             try {
-                const response = await fetch(`${API_URL}/api/admin/pending?adminId=${adminId}`);
-                
-                if (response.status === 403) {
-                    showError('Unauthorized access');
-                    document.body.innerHTML = '<div class="text-center text-white mt-10">⛔ Unauthorized</div>';
+                const initData = tg?.initData || '';
+                const body = initData ? { initData } : { telegramId: 12345 };
+                const resp = await fetch(`${API_URL}/api/auth`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const user = await resp.json();
+                adminId = user.telegramId;
+
+                // Check admin
+                const statsResp = await fetch(`${API_URL}/api/admin/stats?adminId=${adminId}`);
+                if (!statsResp.ok) {
+                    document.getElementById('authStatus').innerHTML = '<span class="text-red-400">⛔ Admin ခွင့်ပြုချက်မရှိပါ</span>';
                     return;
                 }
-                
-                const data = await response.json();
-                renderDeposits(data.deposits);
-                renderWithdrawals(data.withdrawals);
-                
-            } catch (error) {
-                console.error('Error loading pending:', error);
-                showError('ဒေတာရယူ၍ မရပါ။ နောက်မှပြန်ကြိုးစားပါ။');
-            } finally {
-                showLoading(false);
+
+                document.getElementById('authStatus').style.display = 'none';
+                document.getElementById('statsGrid').style.display = 'grid';
+
+                const stats = await statsResp.json();
+                document.getElementById('statUsers').textContent = stats.totalUsers || 0;
+                document.getElementById('statGames').textContent = stats.totalGames || 0;
+                document.getElementById('statPendingDep').textContent = stats.pendingDeposits || 0;
+                document.getElementById('statPendingWith').textContent = stats.pendingWithdrawals || 0;
+
+                await loadPending();
+            } catch (e) {
+                document.getElementById('authStatus').innerHTML = `<span class="text-red-400">❌ Error: ${e.message}</span>`;
             }
         }
 
-        // Load stats
-        async function loadStats() {
+        async function loadAll() {
+            document.getElementById('refreshIcon').className = 'spin-anim';
+            document.getElementById('refreshIcon').textContent = '⟳';
+            await loadPending();
+            // Reload stats
             try {
-                const response = await fetch(`${API_URL}/api/admin/stats?adminId=${adminId}`);
-                const data = await response.json();
-                
-                document.getElementById('totalUsers').textContent = data.totalUsers || 0;
-                document.getElementById('totalDeposits').textContent = data.totalDeposits || 0;
-                document.getElementById('totalDepositAmount').textContent = (data.totalDepositAmount || 0).toLocaleString() + ' MMK';
-                document.getElementById('totalWithdrawalAmount').textContent = (data.totalWithdrawalAmount || 0).toLocaleString() + ' MMK';
-                
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
+                const s = await fetch(`${API_URL}/api/admin/stats?adminId=${adminId}`);
+                const stats = await s.json();
+                document.getElementById('statPendingDep').textContent = stats.pendingDeposits || 0;
+                document.getElementById('statPendingWith').textContent = stats.pendingWithdrawals || 0;
+            } catch (e) {}
+            document.getElementById('refreshIcon').className = '';
+            document.getElementById('refreshIcon').textContent = '🔄';
         }
 
-        // Load history
-        async function loadHistory() {
+        async function loadPending() {
+            if (!adminId) return;
+            document.getElementById('loadingDiv').style.display = 'block';
+            document.getElementById('depositsContent').style.display = 'none';
+            document.getElementById('withdrawalsContent').style.display = 'none';
+
             try {
-                // This would need a separate endpoint - for now show placeholder
-                const historyEl = document.getElementById('historyList');
-                historyEl.innerHTML = `
-                    <div class="text-center py-8">
-                        <p class="text-purple-300 mb-2">📊 မှတ်တမ်းများ ရယူနေသည်...</p>
-                        <p class="text-purple-400 text-sm">မကြာမီ လုပ်ဆောင်နိုင်မည်</p>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('Error loading history:', error);
+                const resp = await fetch(`${API_URL}/api/admin/pending?adminId=${adminId}`);
+                if (!resp.ok) throw new Error('Unauthorized');
+                const data = await resp.json();
+                renderDeposits(data.deposits || []);
+                renderWithdrawals(data.withdrawals || []);
+            } catch (e) {
+                showToast('❌ ' + e.message, 'error');
             }
+
+            document.getElementById('loadingDiv').style.display = 'none';
+            switchTab(currentTab);
         }
 
-        function renderDeposits(deposits) {
-            const container = document.getElementById('depositsList');
-            
-            if (!deposits || deposits.length === 0) {
-                container.innerHTML = '<div class="text-center py-8 text-white/50">✅ ငွေသွင်းရန် စောင့်ဆိုင်းနေသော တောင်းဆိုမှုများ မရှိပါ</div>';
+        function formatDate(d) {
+            if (!d) return '-';
+            return new Date(d).toLocaleString('my-MM', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function renderDeposits(list) {
+            const el = document.getElementById('depositsList');
+            if (!list.length) {
+                el.innerHTML = '<div class="text-center py-8 text-sm" style="color:rgba(255,255,255,0.4);">💰 ငွေသွင်း တောင်းဆိုမှု မရှိသေးပါ</div>';
                 return;
             }
-
-            let html = '';
-            deposits.forEach(d => {
-                const date = new Date(d.createdAt).toLocaleString('my-MM', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                html += `
-                    <div class="bg-white/5 rounded-xl p-4 border border-white/10 animate-slideIn hover:bg-white/10 transition-all">
-                        <div class="flex justify-between items-start mb-3">
-                            <div>
-                                <p class="text-white font-semibold">@${d.username || 'Unknown'}</p>
-                                <p class="text-xs text-purple-300">ID: ${d.userId}</p>
-                                <p class="text-xs text-purple-300">${date}</p>
-                            </div>
-                            <span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm font-semibold">
-                                ⏳ Pending
-                            </span>
+            el.innerHTML = list.map(d => `
+                <div class="card fade-in">
+                    <div class="flex items-start justify-between mb-2">
+                        <div>
+                            <div class="text-white font-black">${d.username || 'User' + d.userId}</div>
+                            <div class="text-xs mt-0.5" style="color:rgba(255,255,255,0.5);">ID: ${d.userId}</div>
                         </div>
-                        
-                        <div class="grid grid-cols-2 gap-3 mb-3 text-sm bg-black/20 rounded-lg p-3">
-                            <div>
-                                <p class="text-purple-300 text-xs">KPay Name</p>
-                                <p class="text-white font-medium">${d.kpayName}</p>
-                            </div>
-                            <div>
-                                <p class="text-purple-300 text-xs">Transaction ID</p>
-                                <p class="text-white font-medium text-xs break-all">${d.transactionId}</p>
-                            </div>
-                            <div>
-                                <p class="text-purple-300 text-xs">ပမာဏ</p>
-                                <p class="text-green-400 font-bold">${d.amount.toLocaleString()} MMK</p>
-                            </div>
-                            <div>
-                                <p class="text-purple-300 text-xs">လက်ကျန်</p>
-                                <p class="text-white">${d.userBalance?.toLocaleString() || 0} MMK</p>
-                            </div>
+                        <div class="badge badge-pending">🕒 PENDING</div>
+                    </div>
+                    <div class="glass-light p-3 mb-3">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span style="color:rgba(255,255,255,0.5);">ပမာဏ</span>
+                            <span class="text-green-400 font-black">${d.amount.toLocaleString()} MMK</span>
                         </div>
-                        
-                        <div class="flex space-x-2">
-                            <button onclick="confirmDeposit('${d._id}')" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2 rounded-lg transition-all transform hover:scale-105">
-                                ✅ အတည်ပြုမည်
-                            </button>
-                            <button onclick="showRejectModal('deposit', '${d._id}')" class="flex-1 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold py-2 rounded-lg transition-all transform hover:scale-105">
-                                ❌ ငြင်းပယ်မည်
-                            </button>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span style="color:rgba(255,255,255,0.5);">KPay Name</span>
+                            <span class="text-white font-bold">${d.kpayName || '-'}</span>
+                        </div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span style="color:rgba(255,255,255,0.5);">Txn ID</span>
+                            <span class="text-yellow-300 font-mono text-xs">${d.transactionId}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span style="color:rgba(255,255,255,0.5);">ရက်</span>
+                            <span class="text-white text-xs">${formatDate(d.createdAt)}</span>
                         </div>
                     </div>
-                `;
-            });
-            
-            container.innerHTML = html;
+                    <div class="flex gap-2">
+                        <button onclick="confirmDeposit('${d._id}')" class="btn btn-green flex-1">✅ အတည်ပြု</button>
+                        <button onclick="openRejectModal('deposit','${d._id}')" class="btn btn-red flex-1">❌ ငြင်းပယ်</button>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        function renderWithdrawals(withdrawals) {
-            const container = document.getElementById('withdrawalsList');
-            
-            if (!withdrawals || withdrawals.length === 0) {
-                container.innerHTML = '<div class="text-center py-8 text-white/50">✅ ငွေထုတ်ရန် စောင့်ဆိုင်းနေသော တောင်းဆိုမှုများ မရှိပါ</div>';
+        function renderWithdrawals(list) {
+            const el = document.getElementById('withdrawalsList');
+            if (!list.length) {
+                el.innerHTML = '<div class="text-center py-8 text-sm" style="color:rgba(255,255,255,0.4);">💸 ငွေထုတ် တောင်းဆိုမှု မရှိသေးပါ</div>';
                 return;
             }
-
-            let html = '';
-            withdrawals.forEach(w => {
-                const date = new Date(w.createdAt).toLocaleString('my-MM', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                html += `
-                    <div class="bg-white/5 rounded-xl p-4 border border-white/10 animate-slideIn hover:bg-white/10 transition-all">
-                        <div class="flex justify-between items-start mb-3">
-                            <div>
-                                <p class="text-white font-semibold">@${w.username || 'Unknown'}</p>
-                                <p class="text-xs text-purple-300">ID: ${w.userId}</p>
-                                <p class="text-xs text-purple-300">${date}</p>
-                            </div>
-                            <span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm font-semibold">
-                                ⏳ Pending
-                            </span>
+            el.innerHTML = list.map(w => `
+                <div class="card fade-in">
+                    <div class="flex items-start justify-between mb-2">
+                        <div>
+                            <div class="text-white font-black">${w.username || 'User' + w.userId}</div>
+                            <div class="text-xs mt-0.5" style="color:rgba(255,255,255,0.5);">ID: ${w.userId} • Balance: ${(w.userBalance || 0).toLocaleString()} MMK</div>
                         </div>
-                        
-                        <div class="grid grid-cols-2 gap-3 mb-3 text-sm bg-black/20 rounded-lg p-3">
-                            <div>
-                                <p class="text-purple-300 text-xs">KPay Name</p>
-                                <p class="text-white font-medium">${w.kpayName}</p>
-                            </div>
-                            <div>
-                                <p class="text-purple-300 text-xs">KPay Number</p>
-                                <p class="text-white font-medium">${w.kpayNumber}</p>
-                            </div>
-                            <div>
-                                <p class="text-purple-300 text-xs">ပမာဏ</p>
-                                <p class="text-red-400 font-bold">${w.amount.toLocaleString()} MMK</p>
-                            </div>
-                            <div>
-                                <p class="text-purple-300 text-xs">လက်ကျန်</p>
-                                <p class="text-white">${w.userBalance?.toLocaleString() || 0} MMK</p>
-                            </div>
+                        <div class="badge badge-pending">🕒 PENDING</div>
+                    </div>
+                    <div class="glass-light p-3 mb-3">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span style="color:rgba(255,255,255,0.5);">ပမာဏ</span>
+                            <span class="text-red-400 font-black">${w.amount.toLocaleString()} MMK</span>
                         </div>
-                        
-                        <div class="flex space-x-2">
-                            <button onclick="confirmWithdrawal('${w._id}')" class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-2 rounded-lg transition-all transform hover:scale-105">
-                                ✅ အတည်ပြုမည်
-                            </button>
-                            <button onclick="showRejectModal('withdrawal', '${w._id}')" class="flex-1 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold py-2 rounded-lg transition-all transform hover:scale-105">
-                                ❌ ငြင်းပယ်မည်
-                            </button>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span style="color:rgba(255,255,255,0.5);">KPay Name</span>
+                            <span class="text-white font-bold">${w.kpayName || '-'}</span>
+                        </div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span style="color:rgba(255,255,255,0.5);">KPay Number</span>
+                            <span class="text-yellow-300 font-bold">${w.kpayNumber || '-'}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span style="color:rgba(255,255,255,0.5);">ရက်</span>
+                            <span class="text-white text-xs">${formatDate(w.createdAt)}</span>
                         </div>
                     </div>
-                `;
-            });
-            
-            container.innerHTML = html;
+                    <div class="flex gap-2">
+                        <button onclick="confirmWithdrawal('${w._id}')" class="btn btn-green flex-1">✅ အတည်ပြု</button>
+                        <button onclick="openRejectModal('withdrawal','${w._id}')" class="btn btn-red flex-1">❌ ငြင်းပယ်</button>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        // Modal functions
-        function showRejectModal(type, id) {
-            currentAction = type;
-            currentId = id;
+        // Actions
+        async function confirmDeposit(id) {
+            if (!confirm('ဤငွေသွင်းကို အတည်ပြုမည်လား?')) return;
+            try {
+                const r = await fetch(`${API_URL}/api/admin/confirm-deposit`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminId, depositId: id })
+                });
+                const d = await r.json();
+                if (d.success) { showToast('✅ ငွေသွင်း အတည်ပြုပြီး', 'success'); await loadAll(); }
+                else showToast('❌ ' + d.error, 'error');
+            } catch (e) { showToast('❌ Error: ' + e.message, 'error'); }
+        }
+
+        async function confirmWithdrawal(id) {
+            if (!confirm('ဤငွေထုတ်ကို အတည်ပြုမည်လား?')) return;
+            try {
+                const r = await fetch(`${API_URL}/api/admin/confirm-withdrawal`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ adminId, withdrawalId: id })
+                });
+                const d = await r.json();
+                if (d.success) { showToast('✅ ငွေထုတ် အတည်ပြုပြီး', 'success'); await loadAll(); }
+                else showToast('❌ ' + d.error, 'error');
+            } catch (e) { showToast('❌ Error: ' + e.message, 'error'); }
+        }
+
+        function openRejectModal(type, id) {
+            rejectType = type; rejectId = id;
+            document.getElementById('rejectReason').value = '';
             document.getElementById('rejectModal').classList.remove('hidden');
         }
 
-        document.getElementById('cancelReject').addEventListener('click', () => {
+        function closeRejectModal() {
             document.getElementById('rejectModal').classList.add('hidden');
-            document.getElementById('rejectReason').value = '';
-            currentAction = null;
-            currentId = null;
-        });
+            rejectType = null; rejectId = null;
+        }
 
-        document.getElementById('confirmReject').addEventListener('click', async () => {
+        async function confirmReject() {
             const reason = document.getElementById('rejectReason').value.trim() || 'No reason provided';
-            
-            if (currentAction === 'deposit') {
-                await rejectDeposit(currentId, reason);
-            } else if (currentAction === 'withdrawal') {
-                await rejectWithdrawal(currentId, reason);
-            }
-            
-            document.getElementById('rejectModal').classList.add('hidden');
-            document.getElementById('rejectReason').value = '';
-        });
+            const endpoint = rejectType === 'deposit' ? 'reject-deposit' : 'reject-withdrawal';
+            const body = rejectType === 'deposit'
+                ? { adminId, depositId: rejectId, reason }
+                : { adminId, withdrawalId: rejectId, reason };
 
-        // Confirm deposit
-        window.confirmDeposit = async (depositId) => {
-            if (!confirm('ဤငွေသွင်းတောင်းဆိုမှုကို အတည်ပြုလိုပါသလား?')) return;
-            
             try {
-                const response = await fetch(`${API_URL}/api/admin/confirm-deposit`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminId, depositId })
+                const r = await fetch(`${API_URL}/api/admin/${endpoint}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
                 });
-                
-                if (response.ok) {
-                    tg.showAlert('✅ ငွေသွင်းတောင်းဆိုမှု အတည်ပြုပြီးပါပြီ');
-                    loadPending();
-                    loadStats();
-                } else {
-                    const error = await response.json();
-                    showError('Error: ' + error.error);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Network error');
-            }
-        };
+                const d = await r.json();
+                if (d.success) { showToast('❌ ငြင်းပယ်ပြီး', 'success'); await loadAll(); }
+                else showToast('❌ ' + d.error, 'error');
+            } catch (e) { showToast('❌ Error: ' + e.message, 'error'); }
 
-        // Reject deposit
-        window.rejectDeposit = async (depositId, reason) => {
-            try {
-                const response = await fetch(`${API_URL}/api/admin/reject-deposit`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminId, depositId, reason })
-                });
-                
-                if (response.ok) {
-                    tg.showAlert('❌ ငွေသွင်းတောင်းဆိုမှု ငြင်းပယ်ပြီးပါပြီ');
-                    loadPending();
-                    loadStats();
-                } else {
-                    const error = await response.json();
-                    showError('Error: ' + error.error);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Network error');
-            }
-        };
+            closeRejectModal();
+        }
 
-        // Confirm withdrawal
-        window.confirmWithdrawal = async (withdrawalId) => {
-            if (!confirm('ဤငွေထုတ်တောင်းဆိုမှုကို အတည်ပြုလိုပါသလား?')) return;
-            
-            try {
-                const response = await fetch(`${API_URL}/api/admin/confirm-withdrawal`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminId, withdrawalId })
-                });
-                
-                if (response.ok) {
-                    tg.showAlert('✅ ငွေထုတ်တောင်းဆိုမှု အတည်ပြုပြီးပါပြီ');
-                    loadPending();
-                    loadStats();
-                } else {
-                    const error = await response.json();
-                    showError('Error: ' + error.error);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Network error');
-            }
-        };
+        // Auto-refresh every 30s
+        setInterval(() => { if (document.visibilityState === 'visible' && adminId) loadAll(); }, 30000);
 
-        // Reject withdrawal
-        window.rejectWithdrawal = async (withdrawalId, reason) => {
-            try {
-                const response = await fetch(`${API_URL}/api/admin/reject-withdrawal`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ adminId, withdrawalId, reason })
-                });
-                
-                if (response.ok) {
-                    tg.showAlert('❌ ငွေထုတ်တောင်းဆိုမှု ငြင်းပယ်ပြီးပါပြီ');
-                    loadPending();
-                    loadStats();
-                } else {
-                    const error = await response.json();
-                    showError('Error: ' + error.error);
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Network error');
-            }
-        };
-
-        // Auto-refresh every 30 seconds
-        setInterval(() => {
-            if (document.visibilityState === 'visible') {
-                loadPending();
-                loadStats();
-            }
-        }, 30000);
+        init();
     </script>
 </body>
 </html>
