@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin · TicToeTic</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&display=swap');
+    * { box-sizing: border-box; }
+    body { font-family: 'Padauk', sans-serif; background: #060d18; min-height: 100vh; color: #e2e8f0; }
+    .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+    .tab-active { background: linear-gradient(135deg, #f59e0b, #d97706) !important; color: #000 !important; font-weight: 900; }
+    .hidden { display: none !important; }
+    .btn { cursor: pointer; transition: all 0.15s; }
+    .btn:active { transform: scale(0.96); }
+    .badge-pending { background: rgba(251,191,36,0.2); color: #fbbf24; }
+    .badge-completed { background: rgba(34,197,94,0.2); color: #4ade80; }
+    .badge-rejected { background: rgba(239,68,68,0.2); color: #f87171; }
+    .toast { position: fixed; top: 16px; right: 16px; z-index: 9999; padding: 12px 20px; border-radius: 10px; font-weight: bold; max-width: 300px; }
+    table { border-collapse: collapse; }
+    td, th { white-space: nowrap; }
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+    .stat-up { color: #4ade80; }
+    .stat-down { color: #f87171; }
+  </style>
+</head>
+<body class="p-4">
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Auth Check -->
+  <div id="authFail" class="hidden fixed inset-0 bg-black flex items-center justify-center z-50">
+    <div class="text-center">
+      <div class="text-6xl mb-4">⛔</div>
+      <p class="text-xl font-black text-red-400">ဝင်ခွင့် မရှိပါ</p>
+      <p class="text-gray-400 mt-2">Admin သာ ဝင်ရောက်နိုင်သည်</p>
+    </div>
+  </div>
+
+  <div id="mainContent" class="max-w-7xl mx-auto">
+
+    <!-- Header -->
+    <div class="glass rounded-2xl p-4 mb-4 flex justify-between items-center">
+      <div>
+        <h1 class="text-2xl font-black text-amber-400 flex items-center gap-2">
+          <i class="fas fa-crown"></i> Admin Panel
+        </h1>
+        <p class="text-xs text-gray-400" id="adminInfo">TicToeTic Dashboard</p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="refreshAll()" class="btn bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2">
+          <i class="fas fa-sync-alt" id="refreshIcon"></i> Refresh
+        </button>
+        <div id="dbStatus" class="px-3 py-2 rounded-xl text-xs font-bold bg-green-500/20 text-green-400">
+          <i class="fas fa-database"></i> DB OK
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="statsGrid">
+      <div class="glass rounded-xl p-4">
+        <p class="text-xs text-gray-400 mb-1"><i class="fas fa-users mr-1"></i>စုစုပေါင်းUser</p>
+        <p class="text-2xl font-black text-yellow-400" id="statUsers">-</p>
+      </div>
+      <div class="glass rounded-xl p-4">
+        <p class="text-xs text-gray-400 mb-1"><i class="fas fa-clock mr-1 text-cyan-400"></i>ဆိုင်းငံ့ဖြည့်</p>
+        <p class="text-2xl font-black text-cyan-400" id="statPendingDep">-</p>
+      </div>
+      <div class="glass rounded-xl p-4">
+        <p class="text-xs text-gray-400 mb-1"><i class="fas fa-clock mr-1 text-amber-400"></i>ဆိုင်းငံ့ထုတ်</p>
+        <p class="text-2xl font-black text-amber-400" id="statPendingWith">-</p>
+      </div>
+      <div class="glass rounded-xl p-4">
+        <p class="text-xs text-gray-400 mb-1"><i class="fas fa-gamepad mr-1 text-purple-400"></i>ဂိမ်းပွဲ</p>
+        <p class="text-2xl font-black text-purple-400" id="statGames">-</p>
+      </div>
+      <div class="glass rounded-xl p-4">
+        <p class="text-xs text-gray-400 mb-1"><i class="fas fa-chart-line mr-1 text-green-400"></i>Revenue</p>
+        <p class="text-xl font-black text-green-400" id="statRevenue">-</p>
+        <p class="text-xs text-gray-500">ကျပ်</p>
+      </div>
+      <div class="glass rounded-xl p-4">
+        <p class="text-xs text-gray-400 mb-1"><i class="fas fa-trophy mr-1 text-amber-400"></i>ကြေးပေး</p>
+        <p class="text-xl font-black text-red-400" id="statPrizes">-</p>
+        <p class="text-xs text-gray-500">ကျပ်</p>
+      </div>
+      <div class="glass rounded-xl p-4 col-span-2">
+        <p class="text-xs text-gray-400 mb-1"><i class="fas fa-coins mr-1 text-yellow-400"></i>အမြတ်အစွန်း</p>
+        <p class="text-xl font-black text-yellow-400" id="statProfit">-</p>
+        <p class="text-xs text-gray-500">ကျပ်</p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-4 overflow-x-auto pb-1">
+      <button class="btn tab-btn tab-active px-4 py-2 rounded-xl bg-white/10 text-sm font-bold whitespace-nowrap" data-tab="deposits" onclick="showTab('deposits', this)">
+        <i class="fas fa-plus-circle mr-1"></i>ငွေဖြည့် <span id="depCount" class="ml-1 bg-red-500 text-white text-xs px-1.5 rounded-full hidden">0</span>
+      </button>
+      <button class="btn tab-btn px-4 py-2 rounded-xl bg-white/10 text-sm font-bold whitespace-nowrap" data-tab="withdraws" onclick="showTab('withdraws', this)">
+        <i class="fas fa-minus-circle mr-1"></i>ငွေထုတ် <span id="withCount" class="ml-1 bg-red-500 text-white text-xs px-1.5 rounded-full hidden">0</span>
+      </button>
+      <button class="btn tab-btn px-4 py-2 rounded-xl bg-white/10 text-sm font-bold whitespace-nowrap" data-tab="users" onclick="showTab('users', this)">
+        <i class="fas fa-users mr-1"></i>Users
+      </button>
+      <button class="btn tab-btn px-4 py-2 rounded-xl bg-white/10 text-sm font-bold whitespace-nowrap" data-tab="games" onclick="showTab('games', this)">
+        <i class="fas fa-gamepad mr-1"></i>Games
+      </button>
+      <button class="btn tab-btn px-4 py-2 rounded-xl bg-white/10 text-sm font-bold whitespace-nowrap" data-tab="broadcast" onclick="showTab('broadcast', this)">
+        <i class="fas fa-bullhorn mr-1"></i>Broadcast
+      </button>
+      <button class="btn tab-btn px-4 py-2 rounded-xl bg-white/10 text-sm font-bold whitespace-nowrap" data-tab="settings" onclick="showTab('settings', this)">
+        <i class="fas fa-cog mr-1"></i>Settings
+      </button>
+    </div>
+
+    <!-- Deposits Tab -->
+    <div id="tab-deposits" class="glass rounded-2xl p-4">
+      <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <h2 class="font-black text-lg text-amber-400"><i class="fas fa-plus-circle mr-2"></i>ငွေဖြည့်မှုများ</h2>
+        <div class="flex gap-2">
+          <select id="depFilter" onchange="loadDeposits()" class="bg-white/10 rounded-xl px-3 py-1.5 text-sm border border-white/10">
+            <option value="pending">Pending</option>
+            <option value="completed">Completed</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">အားလုံး</option>
+          </select>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-400 border-b border-white/10">
+              <th class="pb-3 pr-4">အချိန်</th>
+              <th class="pb-3 pr-4">User ID</th>
+              <th class="pb-3 pr-4">KPay</th>
+              <th class="pb-3 pr-4">Txn ID</th>
+              <th class="pb-3 pr-4">ပမာဏ</th>
+              <th class="pb-3 pr-4">Status</th>
+              <th class="pb-3">Action</th>
+            </tr>
+          </thead>
+          <tbody id="depositsList">
+            <tr><td colspan="7" class="py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Withdraws Tab -->
+    <div id="tab-withdraws" class="glass rounded-2xl p-4 hidden">
+      <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <h2 class="font-black text-lg text-cyan-400"><i class="fas fa-minus-circle mr-2"></i>ငွေထုတ်မှုများ</h2>
+        <div class="flex gap-2">
+          <select id="withFilter" onchange="loadWithdraws()" class="bg-white/10 rounded-xl px-3 py-1.5 text-sm border border-white/10">
+            <option value="pending">Pending</option>
+            <option value="completed">Completed</option>
+            <option value="rejected">Rejected</option>
+            <option value="all">အားလုံး</option>
+          </select>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-400 border-b border-white/10">
+              <th class="pb-3 pr-4">အချိန်</th>
+              <th class="pb-3 pr-4">User ID</th>
+              <th class="pb-3 pr-4">KPay</th>
+              <th class="pb-3 pr-4">ဖုန်း</th>
+              <th class="pb-3 pr-4">ပမာဏ</th>
+              <th class="pb-3 pr-4">Status</th>
+              <th class="pb-3">Action</th>
+            </tr>
+          </thead>
+          <tbody id="withdrawsList">
+            <tr><td colspan="7" class="py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Users Tab -->
+    <div id="tab-users" class="glass rounded-2xl p-4 hidden">
+      <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+        <h2 class="font-black text-lg text-yellow-400"><i class="fas fa-users mr-2"></i>အသုံးပြုသူများ</h2>
+        <input type="text" id="searchUser" placeholder="🔍 ရှာရန်..." class="bg-white/10 border border-white/10 rounded-xl px-4 py-2 text-sm w-48" oninput="filterUsers()">
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-400 border-b border-white/10">
+              <th class="pb-3 pr-4">User ID</th>
+              <th class="pb-3 pr-4">အမည်</th>
+              <th class="pb-3 pr-4">လက်ကျန်</th>
+              <th class="pb-3 pr-4">Win/Game</th>
+              <th class="pb-3 pr-4">မိတ်ဆက်</th>
+              <th class="pb-3 pr-4">နေ့ရက်</th>
+              <th class="pb-3">Action</th>
+            </tr>
+          </thead>
+          <tbody id="usersList">
+            <tr><td colspan="7" class="py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Games Tab -->
+    <div id="tab-games" class="glass rounded-2xl p-4 hidden">
+      <h2 class="font-black text-lg text-purple-400 mb-4"><i class="fas fa-gamepad mr-2"></i>ဂိမ်းမှတ်တမ်း</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-gray-400 border-b border-white/10">
+              <th class="pb-3 pr-4">Game ID</th>
+              <th class="pb-3 pr-4">Player 1</th>
+              <th class="pb-3 pr-4">Player 2</th>
+              <th class="pb-3 pr-4">Winner</th>
+              <th class="pb-3 pr-4">Status</th>
+              <th class="pb-3 pr-4">ကြေး</th>
+              <th class="pb-3">အချိန်</th>
+            </tr>
+          </thead>
+          <tbody id="gamesList">
+            <tr><td colspan="7" class="py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Broadcast Tab -->
+    <div id="tab-broadcast" class="glass rounded-2xl p-4 hidden">
+      <h2 class="font-black text-lg text-green-400 mb-4"><i class="fas fa-bullhorn mr-2"></i>Broadcast Message</h2>
+      <p class="text-sm text-gray-400 mb-4">User အားလုံးထံ Telegram မှတဆင့် Message ပေးပို့မည်</p>
+      <textarea id="broadcastMsg" rows="5" placeholder="Message ရိုက်ပါ..." class="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 mb-4 resize-none" style="outline:none;"></textarea>
+      <div class="flex items-center gap-3">
+        <button onclick="sendBroadcast()" class="btn bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-3 rounded-xl font-black text-white flex items-center gap-2">
+          <i class="fas fa-paper-plane"></i> ပေးပို့မည်
+        </button>
+        <p class="text-xs text-gray-400">⚠️ User အားလုံးထံ ပေးပို့မည်ဆိုတာ သေချာပါသလား?</p>
+      </div>
+      <div id="broadcastResult" class="mt-4 hidden"></div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="tab-settings" class="glass rounded-2xl p-4 hidden">
+      <h2 class="font-black text-lg text-gray-300 mb-5"><i class="fas fa-cog mr-2"></i>ဆက်တင်များ</h2>
+      <div class="grid md:grid-cols-2 gap-4 max-w-2xl">
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">အနည်းဆုံးငွေဖြည့် (ကျပ်)</label>
+          <input type="number" id="minDeposit" class="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white" style="outline:none;">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">အနည်းဆုံးငွေထုတ် (ကျပ်)</label>
+          <input type="number" id="minWithdraw" class="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white" style="outline:none;">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">ဂိမ်းကြေး (ကျပ်)</label>
+          <input type="number" id="gameFee" class="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white" style="outline:none;">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">အနိုင်ဆု (ကျပ်)</label>
+          <input type="number" id="gamePrize" class="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white" style="outline:none;">
+        </div>
+        <div>
+          <label class="block text-xs text-gray-400 mb-1">မိတ်ဆက်ဆု (ကျပ်)</label>
+          <input type="number" id="referralBonus" class="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white" style="outline:none;">
+        </div>
+      </div>
+      <button onclick="saveSettings()" class="btn mt-5 bg-gradient-to-r from-amber-500 to-orange-600 text-black font-black py-3 px-8 rounded-xl flex items-center gap-2">
+        <i class="fas fa-save"></i> သိမ်းမည်
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Balance Modal -->
+  <div id="balanceModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+    <div class="glass rounded-2xl p-6 w-full max-w-sm">
+      <h3 class="font-black text-lg mb-4 text-amber-400">Balance ပြောင်းလဲရန်</h3>
+      <p class="text-sm text-gray-400 mb-2">User: <span id="balanceUserId" class="text-white font-bold"></span></p>
+      <input type="number" id="balanceAmount" placeholder="ပမာဏ (ပေါင်း: +500, နုတ်: -500)" class="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white mb-3" style="outline:none;">
+      <input type="text" id="balanceNote" placeholder="မှတ်ချက် (optional)" class="w-full bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-white mb-4" style="outline:none;">
+      <div class="flex gap-3">
+        <button onclick="submitBalanceAdjust()" class="btn flex-1 bg-gradient-to-r from-amber-500 to-orange-600 text-black font-black py-3 rounded-xl">အတည်ပြုမည်</button>
+        <button onclick="closeBalanceModal()" class="btn flex-1 bg-white/10 hover:bg-white/20 py-3 rounded-xl">မပြောင်းတော့ပါ</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.expand(); tg.ready(); }
+
+    const ADMIN_SECRET = 'YOUR_ADMIN_SECRET'; // Must match .env ADMIN_SECRET
+    const BASE_URL = '';
+    const headers = { 'Content-Type': 'application/json', 'x-admin-key': ADMIN_SECRET };
+
+    let currentTab = 'deposits';
+    let allUsers = [];
+    let selectedUserId = null;
+
+    // Auth check
+    async function checkAuth() {
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/stats`, { headers });
+        if (!res.ok) {
+          document.getElementById('authFail').classList.remove('hidden');
+          document.getElementById('mainContent').classList.add('hidden');
+          return false;
+        }
+        return true;
+      } catch {
+        showToast('ချိတ်ဆက်မှု မအောင်မြင်ပါ', 'error');
+        return false;
+      }
+    }
+
+    // Toast
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = `toast ${type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600'} text-white`;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 3500);
+    }
+
+    // Tabs
+    function showTab(name, btn) {
+      document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('tab-active'));
+      document.getElementById(`tab-${name}`)?.classList.remove('hidden');
+      if (btn) btn.classList.add('tab-active');
+      currentTab = name;
+      loadTabData(name);
+    }
+
+    function loadTabData(name) {
+      if (name === 'deposits') loadDeposits();
+      else if (name === 'withdraws') loadWithdraws();
+      else if (name === 'users') loadUsers();
+      else if (name === 'games') loadGames();
+      else if (name === 'settings') loadSettings();
+    }
+
+    // Stats
+    async function loadStats() {
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/stats`, { headers });
+        if (!res.ok) return;
+        const s = await res.json();
+        document.getElementById('statUsers').textContent = s.totalUsers?.toLocaleString() || 0;
+        document.getElementById('statPendingDep').textContent = s.pendingDeposits || 0;
+        document.getElementById('statPendingWith').textContent = s.pendingWithdraws || 0;
+        document.getElementById('statGames').textContent = s.totalGames?.toLocaleString() || 0;
+        document.getElementById('statRevenue').textContent = (s.totalRevenue || 0).toLocaleString();
+        document.getElementById('statPrizes').textContent = ((s.totalRevenue || 0) - (s.netProfit || 0)).toLocaleString();
+        document.getElementById('statProfit').textContent = (s.netProfit || 0).toLocaleString();
+
+        const dc = document.getElementById('depCount');
+        const wc = document.getElementById('withCount');
+        if (s.pendingDeposits > 0) { dc.textContent = s.pendingDeposits; dc.classList.remove('hidden'); } else dc.classList.add('hidden');
+        if (s.pendingWithdraws > 0) { wc.textContent = s.pendingWithdraws; wc.classList.remove('hidden'); } else wc.classList.add('hidden');
+      } catch (err) { console.error('Stats error:', err); }
+    }
+
+    // Deposits
+    async function loadDeposits() {
+      const filter = document.getElementById('depFilter')?.value || 'pending';
+      const url = filter === 'all' ? '/api/admin/deposits/all' : filter === 'pending' ? '/api/admin/deposits/pending' : `/api/admin/deposits/all`;
+      try {
+        const res = await fetch(`${BASE_URL}${url}`, { headers });
+        let data = await res.json();
+        if (filter !== 'all' && filter !== 'pending') data = data.filter(d => d.status === filter);
+        const tbody = document.getElementById('depositsList');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">မှတ်တမ်း မရှိပါ</td></tr>'; return; }
+        tbody.innerHTML = data.map(d => `
+          <tr class="border-b border-white/5 hover:bg-white/2">
+            <td class="py-3 pr-4 text-xs text-gray-400">${new Date(d.createdAt).toLocaleDateString('my')}<br>${new Date(d.createdAt).toLocaleTimeString('my',{hour:'2-digit',minute:'2-digit'})}</td>
+            <td class="py-3 pr-4 font-mono text-xs">${d.userId}</td>
+            <td class="py-3 pr-4">${d.details?.kpayName || '-'}</td>
+            <td class="py-3 pr-4 text-xs font-mono text-gray-300">${d.details?.transactionId || '-'}</td>
+            <td class="py-3 pr-4 font-black text-green-400">${d.amount?.toLocaleString()}</td>
+            <td class="py-3 pr-4"><span class="px-2 py-1 rounded-full text-xs badge-${d.status}">${d.status}</span></td>
+            <td class="py-3">
+              ${d.status === 'pending' ? `
+                <button onclick="confirmDeposit('${d._id}')" class="btn bg-green-500/20 text-green-400 hover:bg-green-500/40 px-3 py-1 rounded-lg text-xs mr-1">✅</button>
+                <button onclick="rejectDeposit('${d._id}')" class="btn bg-red-500/20 text-red-400 hover:bg-red-500/40 px-3 py-1 rounded-lg text-xs">❌</button>
+              ` : '<span class="text-gray-600 text-xs">—</span>'}
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) { console.error(err); showToast('Load failed', 'error'); }
+    }
+
+    async function confirmDeposit(id) {
+      if (!confirm('ငွေဖြည့်မှု အတည်ပြုမည်မှာ သေချာပါသလား?')) return;
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/confirm/deposit/${id}`, { method: 'POST', headers });
+        if (res.ok) { showToast('✅ အတည်ပြုပြီး'); loadDeposits(); loadStats(); }
+        else showToast('Error', 'error');
+      } catch { showToast('Error', 'error'); }
+    }
+
+    async function rejectDeposit(id) {
+      if (!confirm('ငွေဖြည့်မှု ပယ်ချမည်မှာ သေချာပါသလား?')) return;
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/reject/deposit/${id}`, { method: 'POST', headers });
+        if (res.ok) { showToast('❌ ပယ်ချပြီး', 'info'); loadDeposits(); loadStats(); }
+        else showToast('Error', 'error');
+      } catch { showToast('Error', 'error'); }
+    }
+
+    // Withdraws
+    async function loadWithdraws() {
+      const filter = document.getElementById('withFilter')?.value || 'pending';
+      const url = '/api/admin/withdraws/' + (filter === 'pending' ? 'pending' : 'all');
+      try {
+        const res = await fetch(`${BASE_URL}${url}`, { headers });
+        let data = await res.json();
+        if (filter !== 'all' && filter !== 'pending') data = data.filter(w => w.status === filter);
+        const tbody = document.getElementById('withdrawsList');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">မှတ်တမ်း မရှိပါ</td></tr>'; return; }
+        tbody.innerHTML = data.map(w => `
+          <tr class="border-b border-white/5 hover:bg-white/2">
+            <td class="py-3 pr-4 text-xs text-gray-400">${new Date(w.createdAt).toLocaleDateString('my')}<br>${new Date(w.createdAt).toLocaleTimeString('my',{hour:'2-digit',minute:'2-digit'})}</td>
+            <td class="py-3 pr-4 font-mono text-xs">${w.userId}</td>
+            <td class="py-3 pr-4">${w.details?.kpayName || '-'}</td>
+            <td class="py-3 pr-4 font-mono text-xs">${w.details?.phoneNumber || '-'}</td>
+            <td class="py-3 pr-4 font-black text-amber-400">${w.amount?.toLocaleString()}</td>
+            <td class="py-3 pr-4"><span class="px-2 py-1 rounded-full text-xs badge-${w.status}">${w.status}</span></td>
+            <td class="py-3">
+              ${w.status === 'pending' ? `
+                <button onclick="confirmWithdraw('${w._id}')" class="btn bg-green-500/20 text-green-400 hover:bg-green-500/40 px-3 py-1 rounded-lg text-xs mr-1">✅</button>
+                <button onclick="rejectWithdraw('${w._id}')" class="btn bg-red-500/20 text-red-400 hover:bg-red-500/40 px-3 py-1 rounded-lg text-xs">❌</button>
+              ` : '<span class="text-gray-600 text-xs">—</span>'}
+            </td>
+          </tr>
+        `).join('');
+      } catch (err) { console.error(err); showToast('Load failed', 'error'); }
+    }
+
+    async function confirmWithdraw(id) {
+      if (!confirm('ငွေထုတ်ပေးမည်မှာ သေချာပါသလား?')) return;
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/confirm/withdraw/${id}`, { method: 'POST', headers });
+        if (res.ok) { showToast('✅ ငွေထုတ်ပေးပြီး'); loadWithdraws(); loadStats(); }
+        else { const e = await res.json(); showToast('Error: ' + e.error, 'error'); }
+      } catch { showToast('Error', 'error'); }
+    }
+
+    async function rejectWithdraw(id) {
+      if (!confirm('ငွေထုတ်မှု ပယ်ချမည်မှာ သေချာပါသလား?')) return;
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/reject/withdraw/${id}`, { method: 'POST', headers });
+        if (res.ok) { showToast('❌ ပယ်ချပြီး', 'info'); loadWithdraws(); loadStats(); }
+        else showToast('Error', 'error');
+      } catch { showToast('Error', 'error'); }
+    }
+
+    // Users
+    async function loadUsers() {
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/users`, { headers });
+        allUsers = await res.json();
+        renderUsers(allUsers);
+      } catch (err) { console.error(err); showToast('Load failed', 'error'); }
+    }
+
+    function renderUsers(users) {
+      const tbody = document.getElementById('usersList');
+      if (!users.length) { tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">User မရှိပါ</td></tr>'; return; }
+      tbody.innerHTML = users.map(u => `
+        <tr class="border-b border-white/5 hover:bg-white/2">
+          <td class="py-3 pr-4 font-mono text-xs text-gray-300">${u.telegramId}</td>
+          <td class="py-3 pr-4">
+            <div class="font-bold text-sm">${u.firstName || ''} ${u.lastName || ''}</div>
+            ${u.username ? `<div class="text-xs text-gray-400">@${u.username}</div>` : ''}
+          </td>
+          <td class="py-3 pr-4 font-black text-yellow-400">${u.balance?.toLocaleString() || 0}</td>
+          <td class="py-3 pr-4 text-sm">${u.totalWins || 0} / ${u.totalGames || 0}</td>
+          <td class="py-3 pr-4"><span class="text-amber-400 font-bold">${u.referralCount || 0}</span></td>
+          <td class="py-3 pr-4 text-xs text-gray-400">${new Date(u.createdAt).toLocaleDateString('my')}</td>
+          <td class="py-3">
+            <button onclick="openBalanceModal('${u.telegramId}')" class="btn bg-blue-500/20 text-blue-400 hover:bg-blue-500/40 px-3 py-1 rounded-lg text-xs mr-1" title="Balance ပြောင်းမည်">💰</button>
+            <button onclick="copyId('${u.telegramId}')" class="btn bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg text-xs" title="ID ကူးမည်">📋</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterUsers() {
+      const q = document.getElementById('searchUser').value.toLowerCase();
+      const filtered = allUsers.filter(u =>
+        u.telegramId?.includes(q) ||
+        u.username?.toLowerCase().includes(q) ||
+        u.firstName?.toLowerCase().includes(q) ||
+        u.lastName?.toLowerCase().includes(q)
+      );
+      renderUsers(filtered);
+    }
+
+    function copyId(id) {
+      navigator.clipboard.writeText(id).then(() => showToast('ID ကူးပြီး!', 'info')).catch(() => {});
+    }
+
+    // Balance Modal
+    function openBalanceModal(userId) {
+      selectedUserId = userId;
+      document.getElementById('balanceUserId').textContent = userId;
+      document.getElementById('balanceAmount').value = '';
+      document.getElementById('balanceNote').value = '';
+      document.getElementById('balanceModal').classList.remove('hidden');
+    }
+
+    function closeBalanceModal() {
+      document.getElementById('balanceModal').classList.add('hidden');
+      selectedUserId = null;
+    }
+
+    async function submitBalanceAdjust() {
+      const amount = document.getElementById('balanceAmount').value;
+      const note = document.getElementById('balanceNote').value;
+      if (!amount) return showToast('ပမာဏ ရိုက်ထည့်ပါ', 'error');
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/adjust-balance`, {
+          method: 'POST', headers,
+          body: JSON.stringify({ userId: selectedUserId, amount, note })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`✅ Balance ပြောင်းပြီး - လက်ကျန်: ${data.newBalance?.toLocaleString()} ကျပ်`);
+          closeBalanceModal(); loadUsers(); loadStats();
+        } else showToast('Error: ' + data.error, 'error');
+      } catch { showToast('Error', 'error'); }
+    }
+
+    // Games
+    async function loadGames() {
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/games`, { headers });
+        const data = await res.json();
+        const tbody = document.getElementById('gamesList');
+        if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-gray-500">ဂိမ်းမှတ်တမ်း မရှိပါ</td></tr>'; return; }
+        tbody.innerHTML = data.map(g => `
+          <tr class="border-b border-white/5 hover:bg-white/2">
+            <td class="py-3 pr-4 font-mono text-xs text-gray-400">${g.gameId?.substring(0,12)}...</td>
+            <td class="py-3 pr-4 text-xs font-mono">${g.player1}</td>
+            <td class="py-3 pr-4 text-xs font-mono">${g.player2 || '—'}</td>
+            <td class="py-3 pr-4 text-xs font-bold ${g.winner === 'bot' ? 'text-cyan-400' : 'text-amber-400'}">${g.winner || (g.isDraw ? '🤝 Draw' : '—')}</td>
+            <td class="py-3 pr-4"><span class="px-2 py-1 rounded-full text-xs ${g.gameStatus==='playing'?'bg-green-500/20 text-green-400':g.gameStatus==='completed'?'bg-gray-500/20 text-gray-400':'bg-amber-500/20 text-amber-400'}">${g.gameStatus}</span></td>
+            <td class="py-3 pr-4 text-xs text-amber-400">${g.betAmount?.toLocaleString() || 0}</td>
+            <td class="py-3 text-xs text-gray-400">${new Date(g.startTime).toLocaleDateString('my')}<br>${new Date(g.startTime).toLocaleTimeString('my',{hour:'2-digit',minute:'2-digit'})}</td>
+          </tr>
+        `).join('');
+      } catch (err) { console.error(err); }
+    }
+
+    // Broadcast
+    async function sendBroadcast() {
+      const msg = document.getElementById('broadcastMsg').value.trim();
+      if (!msg) return showToast('Message ရိုက်ပါ', 'error');
+      if (!confirm(`User အားလုံးထံ broadcast ပေးပို့မည်မှာ သေချာပါသလား?\n\n"${msg.substring(0,100)}..."`)) return;
+      const resultEl = document.getElementById('broadcastResult');
+      resultEl.innerHTML = '<div class="text-sm text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>ပေးပို့နေသည်...</div>';
+      resultEl.classList.remove('hidden');
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/broadcast`, {
+          method: 'POST', headers,
+          body: JSON.stringify({ message: msg })
+        });
+        const data = await res.json();
+        if (data.success) {
+          resultEl.innerHTML = `<div class="bg-green-500/20 text-green-400 rounded-xl p-3 text-sm">✅ ပေးပို့ပြီး: ${data.sent} ယောက် | မပေးပို့ရ: ${data.failed} ယောက်</div>`;
+          document.getElementById('broadcastMsg').value = '';
+          showToast(`✅ ${data.sent} ယောက်ထံ ပေးပို့ပြီး`);
+        } else {
+          resultEl.innerHTML = '<div class="bg-red-500/20 text-red-400 rounded-xl p-3 text-sm">❌ အမှားရှိသည်</div>';
+        }
+      } catch { resultEl.innerHTML = '<div class="bg-red-500/20 text-red-400 rounded-xl p-3 text-sm">❌ ချိတ်ဆက်မှု မအောင်မြင်ပါ</div>'; }
+    }
+
+    // Settings
+    async function loadSettings() {
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/settings`, { headers });
+        const s = await res.json();
+        document.getElementById('minDeposit').value = s.minDeposit || 1000;
+        document.getElementById('minWithdraw').value = s.minWithdraw || 3000;
+        document.getElementById('gameFee').value = s.gameFee || 1000;
+        document.getElementById('gamePrize').value = s.gamePrize || 1600;
+        document.getElementById('referralBonus').value = s.referralBonus || 100;
+      } catch (err) { console.error(err); }
+    }
+
+    async function saveSettings() {
+      const settings = {
+        minDeposit: parseInt(document.getElementById('minDeposit').value),
+        minWithdraw: parseInt(document.getElementById('minWithdraw').value),
+        gameFee: parseInt(document.getElementById('gameFee').value),
+        gamePrize: parseInt(document.getElementById('gamePrize').value),
+        referralBonus: parseInt(document.getElementById('referralBonus').value)
+      };
+      try {
+        const res = await fetch(`${BASE_URL}/api/admin/settings`, {
+          method: 'POST', headers,
+          body: JSON.stringify(settings)
+        });
+        if ((await res.json()).success) showToast('✅ ဆက်တင်များ သိမ်းပြီး');
+        else showToast('Error', 'error');
+      } catch { showToast('Error', 'error'); }
+    }
+
+    // Refresh all
+    async function refreshAll() {
+      const icon = document.getElementById('refreshIcon');
+      icon.classList.add('fa-spin');
+      await Promise.all([loadStats(), loadTabData(currentTab)]);
+      setTimeout(() => icon.classList.remove('fa-spin'), 1000);
+    }
+
+    // Auto refresh every 30s
+    setInterval(() => loadStats(), 30000);
+
+    // Init
+    (async () => {
+      const ok = await checkAuth();
+      if (!ok) return;
+      await loadStats();
+      loadDeposits();
+    })();
+  </script>
+</body>
+</html>
