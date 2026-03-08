@@ -356,7 +356,7 @@ function copyTxt(t){
 function sendRef(){
   const l=document.getElementById('refL').value;
   if(!l||l==='Loading...')return;
-  const u=`https://t.me/share/url?url=${encodeURIComponent(l)}&text=${encodeURIComponent('🎮 TicToeTic ကစားပြီး ငွေရှာကြစို့!')}`;
+  const u=`https://t.me/share/url?url=${encodeURIComponent(l)}&text=${encodeURIComponent('ဂိမ်းဆော့ရတာ ဝါသနာပါလား? ပိုက်ဆံရော ရချင်လား?\nအားတဲ့အချိန်မှာ ဖုန်းလေးနှိပ်ရုံနဲ့ Balance တွေ တက်လာမယ့် TicToeTic!\n🚫 ရင်းနှီးမြှုပ်နှံရန် မလို\n✅ ကစားသူ အချင်းချင်း ပြိုင်ရုံပဲ\n🚀 မြန်ဆန်တဲ့ ငွေထုတ်စနစ်\nလက်မနှေးဘဲ ဒီမှာ Join ပါ 👇')}`;
   if(tg?.openTelegramLink)tg.openTelegramLink(u);
   else window.open(u,'_blank');
 }
@@ -375,12 +375,14 @@ async function loadRefList(){
   if(!user?.telegramId)return;
   refLoaded=true;
   const el=document.getElementById('refContent');
+  el.innerHTML='<div class="ring" style="margin:0 auto;"></div>';
   try{
     const r=await fetch(`${API}/api/referrals/${user.telegramId}`);
+    if(!r.ok) throw new Error('Server error '+r.status);
     const d=await r.json();
     document.getElementById('refCnt').textContent=d.total||0;
     if(!d.referrals?.length){
-      el.innerHTML='ဖိတ်ထားသူ မရှိသေးပါ';return;
+      el.innerHTML='<div style="color:var(--sub);text-align:center;padding:20px;font-size:13px;">ဖိတ်ထားသူ မရှိသေးပါ</div>';return;
     }
     el.innerHTML=d.referrals.map(r=>`
       <div class="ref-item">
@@ -390,7 +392,10 @@ async function loadRefList(){
         </div>
         <div style="font-weight:800;font-size:13px;color:var(--grn);">${(r.balance||0).toLocaleString()} MMK</div>
       </div>`).join('');
-  }catch(e){el.innerHTML='<span style="color:#f87171;">Load မဖြစ်ပါ</span>';}
+  }catch(e){
+    refLoaded=false; // allow retry
+    el.innerHTML='<div style="color:#f87171;text-align:center;padding:16px;font-size:13px;">⚠️ Load မဖြစ်ပါ — ထပ်ကြိုးစားပါ</div>';
+  }
 }
 
 function esc(s){return (s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
