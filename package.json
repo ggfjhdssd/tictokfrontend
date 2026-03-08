@@ -1,7 +1,7 @@
 {
   "name": "tictoefrontend",
   "version": "1.0.0",
-  "description": "TicToeTic Game Frontend",
+  "description": "TicToeTic Game Frontend - Telegram Mini App",
   "main": "index.html",
   "scripts": {
     "start": "serve .",
@@ -12,7 +12,7 @@
     "serve": "^14.2.1"
   },
   "devDependencies": {},
-  "keywords": ["telegram-mini-app", "game", "tictactoe"],
+  "keywords": ["telegram-mini-app", "game", "tictactoe", "5x5"],
   "author": "",
   "license": "MIT"
 }
