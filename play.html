@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>TicToeTic — ကစားမည်</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07070f;--sur:rgba(255,255,255,.042);--bdr:rgba(255,255,255,.075);
+  --acc:#5c35f5;--pk:#f54565;--grn:#00cc88;--blu:#3d9eff;--ylw:#f5b800;
+  --tx:#eaeaf2;--sub:rgba(255,255,255,.36);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color:var(--tx);overflow-x:hidden;}
+
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.orb1{position:absolute;width:500px;height:500px;border-radius:50%;top:-100px;left:-80px;
+  background:radial-gradient(circle,rgba(92,53,245,.14) 0%,transparent 70%);
+  animation:o1 20s ease-in-out infinite alternate;}
+.orb2{position:absolute;width:400px;height:400px;border-radius:50%;bottom:-80px;right:-60px;
+  background:radial-gradient(circle,rgba(0,204,136,.09) 0%,transparent 70%);
+  animation:o2 16s ease-in-out infinite alternate;}
+@keyframes o1{0%{transform:translate(0,0)}100%{transform:translate(40px,30px)}}
+@keyframes o2{0%{transform:translate(0,0)}100%{transform:translate(-35px,-25px)}}
+.gbg{position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+  background-size:38px 38px;}
+
+/* Loader */
+#ldr{position:fixed;inset:0;background:var(--bg);z-index:1000;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.ldr-t{font-size:1.7rem;font-weight:900;background:linear-gradient(135deg,#a78bfa,#f472b6);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.ring{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:#7c5af5;
+  border-radius:50%;animation:spin .85s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Result overlay */
+#resOv{position:fixed;inset:0;background:rgba(0,0,0,.82);
+  display:none;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(8px);}
+.res-card{background:linear-gradient(135deg,rgba(18,12,45,.96),rgba(28,16,60,.96));
+  border:1px solid rgba(255,255,255,.1);border-radius:22px;padding:30px 22px;
+  text-align:center;max-width:300px;width:90%;
+  animation:resIn .42s cubic-bezier(.16,1,.3,1);}
+@keyframes resIn{from{opacity:0;transform:translateY(28px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.res-em{font-size:3.8rem;margin-bottom:8px;}
+.res-tit{font-size:1.5rem;font-weight:900;letter-spacing:-.02em;margin-bottom:5px;}
+.res-sub{font-size:.85rem;color:var(--sub);margin-bottom:22px;line-height:1.5;}
+.res-btns{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+
+/* Main wrap */
+#wrap{position:relative;z-index:1;max-width:435px;margin:0 auto;padding:11px 12px 32px;display:none;}
+
+.card{background:var(--sur);border:1px solid var(--bdr);border-radius:18px;backdrop-filter:blur(18px);}
+.p4{padding:16px;}
+
+/* Top bar */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
+.back-btn{background:var(--sur);border:1px solid var(--bdr);border-radius:10px;
+  padding:9px;cursor:pointer;display:flex;transition:.16s;}
+.back-btn:active{transform:scale(.9);}
+
+/* Buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:7px;
+  font-family:'Outfit',sans-serif;font-weight:700;border:none;cursor:pointer;
+  border-radius:13px;padding:12px;width:100%;color:#fff;transition:all .16s;font-size:14px;}
+.btn:active{transform:scale(.96);}
+.btn-play{background:linear-gradient(135deg,#5c35f5,#9333ea);box-shadow:0 5px 20px rgba(92,53,245,.3);}
+.btn-grn{background:linear-gradient(135deg,#059669,#10b981);box-shadow:0 4px 12px rgba(16,185,129,.2);}
+.btn-red{background:linear-gradient(135deg,#be123c,#ef4444);box-shadow:0 4px 12px rgba(239,68,68,.2);}
+
+/* Player badges */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:100px;
+  font-size:12px;font-weight:700;}
+.b-x{background:rgba(61,158,255,.15);border:1px solid rgba(61,158,255,.3);color:#93c5fd;}
+.b-o{background:rgba(245,69,101,.15);border:1px solid rgba(245,69,101,.3);color:#fca5a5;}
+.b-grn{background:rgba(0,204,136,.15);border:1px solid rgba(0,204,136,.3);color:#6ee7b7;}
+.b-ylw{background:rgba(245,184,0,.15);border:1px solid rgba(245,184,0,.3);color:#fde68a;}
+.b-pur{background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);color:#c4b5fd;}
+
+/* Timer ring */
+.t-ring{position:relative;width:72px;height:72px;margin:0 auto;}
+.t-ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg);}
+.t-track{stroke:rgba(255,255,255,.07);fill:none;stroke-width:5;}
+.t-fill{fill:none;stroke-width:5;stroke-linecap:round;stroke-dasharray:201;
+  stroke-dashoffset:0;transition:stroke-dashoffset .85s linear,stroke .4s;}
+.t-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:1.45rem;font-weight:900;}
+
+/* Board */
+#board{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:9px;}
+.cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;font-weight:900;border-radius:9px;cursor:pointer;
+  background:rgba(255,255,255,.035);border:1.5px solid rgba(255,255,255,.08);
+  transition:all .14s;user-select:none;}
+.cell:not(.taken):not(.dis):hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);transform:scale(1.05);}
+.cell:not(.taken):not(.dis):active{transform:scale(.93);}
+.cell.taken{cursor:default;}
+.cell.dis{cursor:not-allowed;}
+.cell.my{border-color:rgba(245,184,0,.3);}
+.cell.cx{color:#60a5fa;background:rgba(59,130,246,.14);border-color:rgba(59,130,246,.35);text-shadow:0 0 10px rgba(59,130,246,.5);}
+.cell.co{color:#f87171;background:rgba(239,68,68,.14);border-color:rgba(239,68,68,.35);text-shadow:0 0 10px rgba(239,68,68,.5);}
+.cell.wf{animation:wf .5s ease infinite alternate;}
+@keyframes wf{from{transform:scale(1)}to{transform:scale(1.08);box-shadow:0 0 18px currentColor;}}
+@keyframes popIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}
+.pp{animation:popIn .22s ease-out;}
+
+/* Search loader */
+.sring{width:52px;height:52px;border:4px solid rgba(255,255,255,.07);border-top-color:var(--acc);
+  border-radius:50%;animation:spin .9s linear infinite;margin:0 auto;}
+
+/* Dots */
+.dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:#a78bfa;margin:0 2px;
+  animation:da 1.4s infinite;}
+.dots span:nth-child(2){animation-delay:.2s;}
+.dots span:nth-child(3){animation-delay:.4s;}
+@keyframes da{0%,100%{transform:translateY(0);opacity:.35}50%{transform:translateY(-5px);opacity:1}}
+
+/* Toast */
+#toast{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-70px);
+  z-index:9999;transition:all .38s cubic-bezier(.68,-.55,.265,1.55);opacity:0;pointer-events:none;}
+#toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.ti{padding:10px 20px;border-radius:100px;font-size:13px;font-weight:700;
+  backdrop-filter:blur(20px);display:flex;align-items:center;gap:7px;white-space:nowrap;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.tok{background:rgba(0,204,136,.88);border:1px solid #34d399;color:#fff;}
+.terr{background:rgba(239,68,68,.88);border:1px solid #f87171;color:#fff;}
+</style>
+</head>
+<body>
+<div class="bg"><div class="orb1"></div><div class="orb2"></div><div class="gbg"></div></div>
+<div id="ldr"><div class="ldr-t">🎮 TicToeTic</div><div class="ring"></div></div>
+<div id="toast"><div class="ti" id="ti"></div></div>
+
+<!-- Result Overlay -->
+<div id="resOv">
+  <div class="res-card">
+    <div class="res-em" id="rEm">🏆</div>
+    <div class="res-tit" id="rTit"></div>
+    <div class="res-sub" id="rSub"></div>
+    <div class="res-btns">
+      <button class="btn btn-grn" onclick="playAgain()">🔄 ထပ်ကစား</button>
+      <button class="btn btn-red" onclick="goHome()">🏠 ထွက်</button>
+    </div>
+  </div>
+</div>
+
+<div id="wrap">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <button class="back-btn" onclick="goHome()">
+      <svg width="18" height="18" fill="none" stroke="var(--tx)" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </button>
+    <div style="font-size:1.1rem;font-weight:900;background:linear-gradient(135deg,#a78bfa,#f472b6);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;">🎮 TicToeTic</div>
+    <div style="text-align:right;">
+      <div style="font-size:10px;color:var(--sub);">လက်ကျန်</div>
+      <div style="font-weight:800;color:var(--grn);font-size:.95rem;" id="topBal">0 MMK</div>
+    </div>
+  </div>
+
+  <!-- Game card -->
+  <div class="card p4">
+
+    <!-- IDLE -->
+    <div id="sIdle">
+      <div style="text-align:center;padding:22px 0;">
+        <div style="font-size:3.2rem;margin-bottom:12px;">🎮</div>
+        <div style="font-size:1.25rem;font-weight:900;margin-bottom:6px;">ကစားရန် အသင့်ဖြစ်ပြီ</div>
+        <div style="font-size:13px;color:var(--sub);margin-bottom:20px;">ကစားသူ တစ်ဦးနှင့် တွဲကစားနိုင်သည်</div>
+        <div style="background:rgba(0,0,0,.18);border:1px solid var(--bdr);border-radius:13px;
+          padding:15px;margin-bottom:20px;text-align:left;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;">
+            <span style="color:var(--sub);">ဝင်ကြေး</span><span style="font-weight:700;">1,000 MMK</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;">
+            <span style="color:var(--sub);">နိုင်ရင် ရမည်</span><span style="font-weight:700;color:var(--grn);">1,600 MMK</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;">
+            <span style="color:var(--sub);">သရေကျလျှင်</span><span style="font-weight:700;color:var(--blu);">500 MMK ပြန်ရ</span>
+          </div>
+        </div>
+        <button class="btn btn-play" onclick="startSearch()">🎮 PLAY (1,000 MMK)</button>
+      </div>
+    </div>
+
+    <!-- SEARCHING -->
+    <div id="sSearch" style="display:none;">
+      <div style="text-align:center;padding:26px 0;">
+        <div class="sring" style="margin-bottom:18px;"></div>
+        <div style="font-size:1.15rem;font-weight:900;margin-bottom:8px;">ကစားသူ ရှာနေသည်</div>
+        <div class="dots" style="margin-bottom:14px;"><span></span><span></span><span></span></div>
+        <div class="badge b-ylw" style="margin:0 auto 20px;display:inline-flex;">
+          ⏱ <span id="sSec">30</span> စက္ကန့်
+        </div>
+        <button class="btn btn-red" style="max-width:170px;margin:0 auto;" onclick="cancelSearch()">❌ ပယ်ဖျက်မည်</button>
+      </div>
+    </div>
+
+    <!-- PLAYING -->
+    <div id="sPlay" style="display:none;">
+
+      <!-- Player row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;">
+        <div class="badge b-x" id="p1b">✖ <span id="p1n">You</span></div>
+        <div style="font-size:.8rem;font-weight:800;color:rgba(255,255,255,.25);">VS</div>
+        <div class="badge b-o" id="p2b">⭕ <span id="p2n">ကစားသူ</span></div>
+      </div>
+
+      <!-- Turn badge -->
+      <div style="text-align:center;margin-bottom:11px;">
+        <div class="badge b-grn" id="turnB" style="display:inline-flex;">🎯 သင့်လှည့်</div>
+      </div>
+
+      <!-- Timer -->
+      <div class="t-ring" style="margin-bottom:11px;">
+        <svg width="72" height="72" viewBox="0 0 72 72">
+          <circle cx="36" cy="36" r="32" class="t-track"/>
+          <circle cx="36" cy="36" r="32" class="t-fill" id="tFill" stroke="#f5b800"/>
+        </svg>
+        <div class="t-num" id="tNum">10</div>
+      </div>
+
+      <!-- Board -->
+      <div id="board"></div>
+
+      <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.2);margin-top:5px;">
+        ⚔️ 4 ကွက်တန်းလျှင် အနိုင်ရသည်
+      </div>
+    </div>
+
+  </div><!-- /card -->
+
+  <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.18);margin-top:10px;">
+    ⏱ 10 စက္ကန့် • ✖ ⭕ 4 ကွက်တန်း • 🏆 1,600 MMK
+  </div>
+</div>
+
+<script>
+const tg=window.Telegram?.WebApp;
+if(tg){tg.expand();tg.ready();}
+
+const API='https://tiktocbackend.onrender.com';
+const TURN_S=10;
+
+let socket=null,user=null,gameId=null,mySymbol=null;
+let isMyTurn=false,turnTimer=null,searchTimer=null;
+let searchLeft=30,turnLeft=TURN_S;
+let board=newBoard(),toastT;
+
+function newBoard(){return Array(5).fill(null).map(()=>Array(5).fill(''));}
+
+/* ── toast ── */
+function toast(msg,ok=true,dur=3200){
+  const el=document.getElementById('toast'),ti=document.getElementById('ti');
+  ti.textContent=(ok?'✅ ':'⚠️ ')+msg;ti.className='ti '+(ok?'tok':'terr');
+  el.classList.add('show');clearTimeout(toastT);
+  toastT=setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+/* ── init: fix User123 bug — use sessionStorage as identity cache ── */
+async function init(){
+  try{
+    const initData=tg?.initData||'';
+    const savedId=sessionStorage.getItem('uid');
+    let body;
+    if(initData){
+      body={initData};
+    }else if(savedId){
+      const r2=await fetch(`${API}/api/user/${savedId}`);
+      const d2=await r2.json();
+      if(d2.balance!==undefined){
+        user={telegramId:parseInt(savedId),firstName:d2.firstName,username:d2.username,...d2};
+        document.getElementById('topBal').textContent=`${(user.balance||0).toLocaleString()} MMK`;
+        hideLdr();
+        checkAutoJoin();return;
+      }
+      body={telegramId:parseInt(savedId)};
+    }else{
+      body={telegramId:12345};
+    }
+    const r=await fetch(`${API}/api/auth`,{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok)throw new Error(r.status);
+    user=await r.json();
+    if(user.telegramId)sessionStorage.setItem('uid',user.telegramId);
+    document.getElementById('topBal').textContent=`${(user.balance||0).toLocaleString()} MMK`;
+    hideLdr();
+    checkAutoJoin();
+  }catch(e){
+    console.error('init:',e);
+    hideLdr();
+    toast('ဆာဗာ ချိတ်ဆက်မှု ပြဿနာ',false,5000);
+  }
+}
+
+function checkAutoJoin(){
+  const p=new URLSearchParams(window.location.search);
+  const joinId=p.get('join');
+  if(joinId&&user) startSearch(joinId);
+}
+
+function hideLdr(){
+  const l=document.getElementById('ldr');l.style.opacity='0';l.style.transition='opacity .3s';
+  setTimeout(()=>{l.style.display='none';document.getElementById('wrap').style.display='block';},280);
+}
+
+function goHome(){
+  if(socket){socket.disconnect();socket=null;}
+  window.location.href='/index.html';
+}
+
+/* ── Socket ── */
+function connectSocket(joinId){
+  if(socket?.connected)return;
+  socket=io(API,{
+    query:joinId?{join:joinId}:{},
+    transports:['websocket','polling'],
+    reconnection:true,reconnectionAttempts:5,timeout:12000
+  });
+
+  socket.on('connect',()=>console.log('✅ socket'));
+
+  socket.on('connect_error',(e)=>{
+    console.error('socket err:',e.message);
+    showState('idle');
+    toast('ချိတ်ဆက်မှု ပြဿနာ: '+e.message,false,5000);
+  });
+
+  socket.on('error',(d)=>{
+    const msg=typeof d==='string'?d:d?.msg||'Error';
+    stopSearchTimer();showState('idle');
+    toast(msg,false,5000);
+  });
+
+  socket.on('insufficientBalance',(d)=>{
+    stopSearchTimer();showState('idle');
+    toast(`လက်ကျန်ငွေ မလုံလောက်ပါ — ကျန်: ${(d?.balance||0).toLocaleString()} MMK (1,000 MMK လိုသည်)`,false,5000);
+  });
+
+  socket.on('waitingForPlayer',({gameId:gid})=>{
+    gameId=gid;
+    startSearchTimer();
+  });
+
+  socket.on('gameStarted',(data)=>{
+    stopSearchTimer();
+    gameId=data.gameId;
+    board=data.board||newBoard();
+    mySymbol=data.mySymbol;
+    isMyTurn=data.currentTurn===user.telegramId;
+
+    // Set player name labels — never reveal AI
+    const names=data.players||{};
+    const myName=names[user.telegramId]||'You';
+    const oppId=Object.keys(names).find(k=>parseInt(k)!==user.telegramId);
+    const oppName=oppId?names[oppId]:'ကစားသူ';
+
+    if(mySymbol==='X'){
+      document.getElementById('p1n').textContent=myName;
+      document.getElementById('p2n').textContent=oppName;
+    }else{
+      document.getElementById('p1n').textContent=oppName;
+      document.getElementById('p2n').textContent=myName;
+      document.getElementById('p1b').className='badge b-x';
+      document.getElementById('p2b').className='badge b-o';
+    }
+
+    buildBoard();showState('play');updateTurnUI();startTurnTimer();
+  });
+
+  socket.on('gameResumed',(data)=>{
+    stopSearchTimer();
+    gameId=data.gameId;mySymbol=data.mySymbol;
+    board=data.board||newBoard();
+    isMyTurn=data.currentTurn===user.telegramId;
+    const names=data.players||{};
+    const myName=names[user.telegramId]||'You';
+    const oppId=Object.keys(names).find(k=>parseInt(k)!==user.telegramId);
+    const oppName=oppId?names[oppId]:'ကစားသူ';
+    document.getElementById('p1n').textContent=mySymbol==='X'?myName:oppName;
+    document.getElementById('p2n').textContent=mySymbol==='X'?oppName:myName;
+    buildBoard();showState('play');updateTurnUI();startTurnTimer();
+  });
+
+  socket.on('moveMade',(data)=>{
+    board=data.board;
+    isMyTurn=data.currentTurn===user.telegramId;
+    updateBoard(data.row,data.col,data.symbol);
+    updateTurnUI();resetTurnTimer();
+  });
+
+  socket.on('turnChanged',(data)=>{
+    isMyTurn=data.currentTurn===user.telegramId;
+    updateTurnUI();resetTurnTimer();
+  });
+
+  socket.on('gameOver',(data)=>{
+    stopTurnTimer();
+    board=data.board;
+    refreshAllCells();
+    setTimeout(()=>{showResult(data.winner,data.reason);refreshBal();},700);
+  });
+
+  socket.on('opponentDisconnected',()=>{
+    stopTurnTimer();
+    const b=document.getElementById('turnB');
+    b.className='badge b-ylw';b.textContent='⌛ ကစားသူ ပြန်ချိတ်ဆက်ရန် စောင့်သည်...';
+  });
+
+  socket.on('searchTimeout',()=>{stopSearchTimer();showState('idle');});
+  socket.on('searchCancelled',()=>{stopSearchTimer();showState('idle');});
+}
+
+/* ── States ── */
+function showState(s){
+  document.getElementById('sIdle').style.display=s==='idle'?'block':'none';
+  document.getElementById('sSearch').style.display=s==='search'?'block':'none';
+  document.getElementById('sPlay').style.display=s==='play'?'block':'none';
+}
+
+/* ── Search ── */
+async function startSearch(joinId){
+  if(!user){toast('Login ဝင်ပါ',false);return;}
+  // FIX: always fetch fresh balance before checking — avoids stale/string balance bugs
+  await refreshBal();
+  if(Number(user.balance)<1000){
+    toast('လက်ကျန်ငွေ မလုံလောက်ပါ (1,000 MMK လိုသည်)',false,4000);return;
+  }
+  connectSocket(joinId);
+  showState('search');
+  searchLeft=30;
+  document.getElementById('sSec').textContent=30;
+  socket.emit('findGame',{userId:user.telegramId});
+}
+
+function cancelSearch(){
+  socket?.emit('cancelSearch',{userId:user?.telegramId});
+  stopSearchTimer();showState('idle');
+}
+
+function startSearchTimer(){
+  clearInterval(searchTimer);searchLeft=30;
+  searchTimer=setInterval(()=>{
+    searchLeft--;document.getElementById('sSec').textContent=searchLeft;
+    if(searchLeft<=0){clearInterval(searchTimer);}
+  },1000);
+}
+function stopSearchTimer(){clearInterval(searchTimer);}
+
+/* ── Board ── */
+function buildBoard(){
+  const el=document.getElementById('board');
+  el.innerHTML='';
+  for(let r=0;r<5;r++){
+    for(let c=0;c<5;c++){
+      const d=document.createElement('div');
+      d.className='cell';d.id=`c${r}${c}`;
+      d.dataset.r=r;d.dataset.c=c;
+      d.addEventListener('click',()=>makeMove(r,c));
+      const v=board[r][c];
+      if(v){d.textContent=v==='X'?'✖':'⭕';d.classList.add('taken',v==='X'?'cx':'co');}
+      el.appendChild(d);
+    }
+  }
+  updateInteract();
+}
+
+function updateBoard(row,col,sym){
+  const cell=document.getElementById(`c${row}${col}`);
+  if(!cell||cell.classList.contains('taken'))return;
+  cell.textContent=sym==='X'?'✖':'⭕';
+  cell.classList.add('taken',sym==='X'?'cx':'co','pp');
+  updateInteract();
+}
+
+function refreshAllCells(){
+  for(let r=0;r<5;r++){
+    for(let c=0;c<5;c++){
+      const v=board[r][c];
+      const cell=document.getElementById(`c${r}${c}`);
+      if(!cell)continue;
+      if(v&&!cell.classList.contains('taken')){
+        cell.textContent=v==='X'?'✖':'⭕';
+        cell.classList.add('taken',v==='X'?'cx':'co','pp');
+      }
+    }
+  }
+}
+
+function updateInteract(){
+  document.querySelectorAll('.cell').forEach(c=>{
+    if(c.classList.contains('taken')){c.classList.add('dis');c.classList.remove('my');}
+    else if(isMyTurn){c.classList.remove('dis');c.classList.add('my');}
+    else{c.classList.add('dis');c.classList.remove('my');}
+  });
+}
+
+function makeMove(r,c){
+  if(!isMyTurn||!gameId||!socket?.connected)return;
+  const cell=document.getElementById(`c${r}${c}`);
+  if(cell?.classList.contains('taken'))return;
+  isMyTurn=false;updateInteract();
+  socket.emit('makeMove',{gameId,row:r,col:c});
+}
+
+/* ── Timer ── */
+function startTurnTimer(){
+  turnLeft=TURN_S;updateTimerUI(TURN_S);
+  stopTurnTimer();
+  turnTimer=setInterval(()=>{
+    turnLeft--;updateTimerUI(turnLeft);
+    if(turnLeft<=0)stopTurnTimer();
+  },1000);
+}
+function resetTurnTimer(){stopTurnTimer();startTurnTimer();}
+function stopTurnTimer(){clearInterval(turnTimer);}
+
+function updateTimerUI(val){
+  const num=document.getElementById('tNum');
+  const fill=document.getElementById('tFill');
+  if(!num||!fill)return;
+  const v=Math.max(0,val);
+  num.textContent=v;
+  const pct=v/TURN_S;
+  fill.style.strokeDashoffset=201*(1-pct);
+  if(v<=3){fill.style.stroke='#ef4444';num.style.color='#f87171';}
+  else if(v<=6){fill.style.stroke='#f97316';num.style.color='#fb923c';}
+  else{fill.style.stroke='#f5b800';num.style.color='';}
+}
+
+/* ── Turn UI ── */
+function updateTurnUI(){
+  const b=document.getElementById('turnB');
+  if(isMyTurn){b.className='badge b-grn';b.textContent='🎯 သင့်လှည့်';}
+  else{
+    b.className='badge b-pur';
+    b.innerHTML='<div class="dots"><span></span><span></span><span></span></div> ကစားသူ၏ လှည့်';
+  }
+  updateInteract();
+}
+
+/* ── Result ── */
+function showResult(winner,reason){
+  const ov=document.getElementById('resOv');
+  const em=document.getElementById('rEm');
+  const tit=document.getElementById('rTit');
+  const sub=document.getElementById('rSub');
+
+  if(winner===user.telegramId){
+    em.textContent='🏆';tit.textContent='အနိုင်ရပြီ!';tit.style.color='#4ade80';
+    sub.textContent='ဆုကြေး +1,600 MMK ရရှိပြီ!';
+  }else if(winner===-1){
+    em.textContent='🤝';tit.textContent='သရေကျပြီ!';tit.style.color='#60a5fa';
+    sub.textContent='+500 MMK ပြန်ရပြီ';
+  }else{
+    em.textContent='😔';tit.textContent='ရှုံးပြီ';tit.style.color='#f87171';
+    sub.textContent=reason==='timeout'?'⏱ အချိန်ကုန်သွားသည်':
+                   reason==='disconnect'?'ကစားသူ ထွက်သွားသည်':'ထပ်ကြိုးစားပါ!';
+  }
+  ov.style.display='flex';
+}
+
+function playAgain(){
+  document.getElementById('resOv').style.display='none';
+  if(socket){socket.disconnect();socket=null;}
+  gameId=null;mySymbol=null;isMyTurn=false;board=newBoard();
+  showState('idle');
+}
+
+async function refreshBal(){
+  if(!user?.telegramId)return;
+  try{
+    const r=await fetch(`${API}/api/user/${user.telegramId}`);
+    const d=await r.json();
+    if(d.balance!==undefined){
+      // FIX: always store as Number — avoids "5000" > 1000 = false type-coercion bug
+      user.balance=Number(d.balance);
+      document.getElementById('topBal').textContent=`${user.balance.toLocaleString()} MMK`;
+    }
+  }catch(e){}
+}
+
+window.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
