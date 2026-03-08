@@ -1,8 +1,9 @@
 {
+  "name": "tictoefrontend",
   "version": 2,
   "builds": [
     {
-      "src": "*.html",
+      "src": "/*.html",
       "use": "@vercel/static"
     }
   ],
@@ -16,21 +17,34 @@
       "dest": "/play.html"
     },
     {
+      "src": "/play.html",
+      "dest": "/play.html"
+    },
+    {
       "src": "/admin",
       "dest": "/admin.html"
     },
     {
+      "src": "/admin.html",
+      "dest": "/admin.html"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/$1"
+      "dest": "/index.html"
     }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "ALLOW-FROM https://web.telegram.org" },
-        { "key": "Content-Security-Policy", "value": "frame-ancestors 'self' https://web.telegram.org https://t.me" }
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self' https://*.telegram.org https://*.render.com https://cdn.tailwindcss.com https://cdn.socket.io; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.telegram.org https://cdn.tailwindcss.com https://cdn.socket.io; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; connect-src 'self' https://*.render.com https://tiktocbackend.onrender.com wss://tiktocbackend.onrender.com;"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "ALLOWALL"
+        }
       ]
     }
   ]
