@@ -175,7 +175,7 @@ input:checked+.sl2:before{transform:translateX(19px);}
     <div>
       <div style="font-size:1.2rem;font-weight:900;background:linear-gradient(135deg,#a78bfa,#f472b6);
         -webkit-background-clip:text;-webkit-text-fill-color:transparent;">🛡️ Admin Panel</div>
-      <div style="font-size:11px;color:var(--sub);margin-top:2px;">Admin Management</div>
+      <div style="font-size:11px;color:var(--sub);margin-top:2px;">TicToeTic Management</div>
     </div>
     <div style="text-align:right;font-size:11px;color:var(--sub);line-height:1.9;">
       🎮 <span id="hAG">0</span> ဂိမ်း &nbsp; ⌛ <span id="hQ">0</span> စောင့်
@@ -196,12 +196,12 @@ input:checked+.sl2:before{transform:translateX(19px);}
   <div id="tab-dash">
     <div class="stat-grid">
       <div class="stat"><div class="sn" style="color:#a78bfa;" id="dU">—</div><div class="sl">Users</div></div>
-      <div class="stat"><div class="sn" style="color:var(--grn);" id="dG">—</div><div class="sl">total games</div></div>
+      <div class="stat"><div class="sn" style="color:var(--grn);" id="dG">—</div><div class="sl">ပြီးစီးသောဂိမ်း</div></div>
       <div class="stat" style="border-color:rgba(245,184,0,.15);"><div class="sn" style="color:var(--ylw);" id="dPD">—</div><div class="sl">ငွေသွင်း Pending</div></div>
       <div class="stat" style="border-color:rgba(245,69,101,.15);"><div class="sn" style="color:var(--pk);" id="dPW">—</div><div class="sl">ငွေထုတ် Pending</div></div>
     </div>
     <div class="card p4" style="margin-bottom:11px;">
-      <div class="stitle">Total Earn</div>
+      <div class="stitle">💹 ငွေကြေး အနှစ်ချုပ်</div>
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;">
         <span style="color:var(--sub);">စုစုပေါင်း ဝင်ငွေ</span>
         <span style="font-weight:800;color:var(--grn);" id="dTD">—</span>
@@ -217,12 +217,19 @@ input:checked+.sl2:before{transform:translateX(19px);}
       </div>
     </div>
     <div class="card p4" style="margin-bottom:11px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
         <div>
           <div style="font-weight:700;font-size:14px;">🔧 Maintenance Mode</div>
-          <div style="font-size:11px;color:var(--sub);margin-top:2px;">ဖွင့်ထားရင်usersဝင်မရ</div>
+          <div style="font-size:11px;color:var(--sub);margin-top:2px;">ဖွင့်ထားလျှင် Users ဝင်၍မရပါ</div>
         </div>
         <label class="tog"><input type="checkbox" id="maintTog" onchange="toggleMaint(this.checked)"><span class="sl2"></span></label>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-weight:700;font-size:14px;">🤖 All Bot Mode</div>
+          <div style="font-size:11px;color:var(--sub);margin-top:2px;">ဖွင့်ထားလျှင် အားလုံး Bot နှင့်တွေ့မည်</div>
+        </div>
+        <label class="tog"><input type="checkbox" id="allBotTog" onchange="toggleAllBot(this.checked)"><span class="sl2"></span></label>
       </div>
     </div>
     <button class="btn btn-pur btn-full" onclick="loadDash()">🔄 Refresh</button>
@@ -405,6 +412,7 @@ async function loadDash(){
     document.getElementById('hQ').textContent=d.queueLength||0;
     const s=await api('/api/admin/settings');
     document.getElementById('maintTog').checked=!!s.maintenance;
+    document.getElementById('allBotTog').checked=!!s.allBotMode;
   }catch(e){toast('Stats load မဖြစ်ပါ: '+e.message,false);}
 }
 
@@ -412,6 +420,13 @@ async function toggleMaint(on){
   try{
     await api('/api/admin/maintenance',{method:'POST',body:JSON.stringify({enabled:on})});
     toast(on?'🔧 Maintenance ON':'✅ Maintenance OFF',true);
+  }catch(e){toast('Error',false);}
+}
+
+async function toggleAllBot(on){
+  try{
+    await api('/api/admin/allbotmode',{method:'POST',body:JSON.stringify({enabled:on})});
+    toast(on?'🤖 All Bot Mode ON':'👥 All Bot Mode OFF',true);
   }catch(e){toast('Error',false);}
 }
 
@@ -462,7 +477,7 @@ async function cfmDep(id){
 }
 async function rejDep(id){
   const reason=prompt('Reject အကြောင်းပြချက် ရေးပါ (Optional):','');
-  if(reason===null)return; // cancelled
+  if(reason===null)return;
   try{
     await api(`/api/admin/deposits/${id}/reject`,{method:'POST',body:JSON.stringify({reason:reason.trim()})});
     toast('Rejected',true);loadDep();
@@ -588,7 +603,9 @@ async function loadUsers(page){
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
           <div>
             <div style="font-weight:700;font-size:14px;">${esc(u.firstName||u.username||'User')}
-              ${u.isBanned?'<span class="bdg bg-red" style="margin-left:5px;">Banned</span>':''}</div>
+              ${u.isBanned?'<span class="bdg bg-red" style="margin-left:5px;">Banned</span>':''}
+              ${u.botMode?'<span class="bdg bg-blu" style="margin-left:5px;">🤖 Bot</span>':''}
+            </div>
             <div style="font-size:11px;color:var(--sub);margin-top:2px;">@${esc(u.username||'-')} • ID: ${u.telegramId}</div>
           </div>
           <div style="text-align:right;">
@@ -631,10 +648,22 @@ function showUserDet(u){
         <button class="btn btn-ylw" style="padding:10px;" onclick="adjBal(${u.telegramId})">OK</button>
       </div>
     </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <span class="rlbl">🤖 Bot Mode</span>
+      <label class="tog"><input type="checkbox" id="botModeTog" ${u.botMode?'checked':''} onchange="toggleBotMode(${u.telegramId}, this.checked)"><span class="sl2"></span></label>
+    </div>
     <button class="btn ${u.isBanned?'btn-grn':'btn-red'} btn-full" onclick="togBan(${u.telegramId},${!u.isBanned})">
       ${u.isBanned?'🔓 Unban User':'🚫 Ban User'}
     </button>`;
   det.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function toggleBotMode(tid, enabled){
+  try{
+    await api(`/api/admin/users/${tid}/botmode`,{method:'POST',body:JSON.stringify({enabled})});
+    toast(enabled?'🤖 Bot Mode ON':'👤 Bot Mode OFF',true);
+    loadUsers(usrPage);
+  }catch(e){toast('Error: '+e.message,false);}
 }
 
 async function adjBal(tid){
