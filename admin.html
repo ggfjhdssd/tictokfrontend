@@ -188,6 +188,7 @@ input:checked+.sl2:before{transform:translateX(19px);}
     <button class="tab" onclick="showTab('dep')">💰 ငွေသွင်း</button>
     <button class="tab" onclick="showTab('wd')">💸 ငွေထုတ်</button>
     <button class="tab" onclick="showTab('users')">👥 Users</button>
+    <button class="tab" onclick="showTab('history')">🎮 History</button>
     <button class="tab" onclick="showTab('msg')">📢 Message</button>
   </div>
 
@@ -258,6 +259,16 @@ input:checked+.sl2:before{transform:translateX(19px);}
     <div class="det-panel" id="userDet"></div>
   </div>
 
+  <!-- ─── HISTORY ─── -->
+  <div id="tab-history" style="display:none;">
+    <div style="display:flex;gap:8px;margin-bottom:11px;">
+      <input class="inp" id="histQ" placeholder="Player ID ဖြင့်ရှာ" oninput="debouncHist()">
+      <button class="btn btn-pur" style="padding:10px 14px;white-space:nowrap;" onclick="loadHistory(1)">ရှာ</button>
+    </div>
+    <div id="histList"><div style="text-align:center;padding:28px;color:var(--sub);">Loading...</div></div>
+    <div id="histPag" style="display:flex;justify-content:center;gap:7px;margin-top:10px;flex-wrap:wrap;"></div>
+  </div>
+
   <!-- ─── MESSAGE ─── -->
   <div id="tab-msg" style="display:none;">
     <div class="card p4" style="margin-bottom:11px;">
@@ -290,6 +301,7 @@ const tg=window.Telegram?.WebApp;
 if(tg){tg.expand();tg.ready();}
 
 const API='https://tiktocbackend.onrender.com';
+const WIN_PRIZE=1600;
 let adminId=null,toastT,usrPage=1,srchDeb;
 
 /* ── toast ── */
@@ -366,7 +378,7 @@ async function tryAutoAuth(){
 }
 
 /* ── Tabs ── */
-const TABS=['dash','dep','wd','users','msg'];
+const TABS=['dash','dep','wd','users','history','msg'];
 function showTab(name){
   TABS.forEach(t=>{
     document.getElementById('tab-'+t).style.display=t===name?'block':'none';
@@ -375,6 +387,7 @@ function showTab(name){
   if(name==='dep')loadDep('pending');
   if(name==='wd')loadWd('pending');
   if(name==='users')loadUsers(1);
+  if(name==='history')loadHistory(1);
 }
 
 /* ── Dashboard ── */
@@ -448,9 +461,62 @@ async function cfmDep(id){
   catch(e){toast('Error: '+e.message,false);}
 }
 async function rejDep(id){
-  if(!confirm('Reject ပြုလုပ်မည်?'))return;
-  try{await api(`/api/admin/deposits/${id}/reject`,{method:'POST'});toast('Rejected',true);loadDep();}
-  catch(e){toast('Error: '+e.message,false);}
+  const reason=prompt('Reject အကြောင်းပြချက် ရေးပါ (Optional):','');
+  if(reason===null)return; // cancelled
+  try{
+    await api(`/api/admin/deposits/${id}/reject`,{method:'POST',body:JSON.stringify({reason:reason.trim()})});
+    toast('Rejected',true);loadDep();
+  }catch(e){toast('Error: '+e.message,false);}
+}
+
+/* ── Game History ── */
+let histPage=1,histDeb;
+function debouncHist(){clearTimeout(histDeb);histDeb=setTimeout(()=>loadHistory(1),380);}
+
+async function loadHistory(page){
+  histPage=page||1;
+  const q=document.getElementById('histQ').value.trim();
+  const el=document.getElementById('histList');
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--sub);">Loading...</div>';
+  try{
+    const data=await api(`/api/admin/games?page=${histPage}&search=${encodeURIComponent(q)}`);
+    if(!data.games.length){el.innerHTML='<div style="text-align:center;padding:22px;color:var(--sub);font-size:13px;">ပွဲစဉ် မရှိပါ</div>';return;}
+    el.innerHTML=data.games.map(g=>{
+      const p1id=g.players?.[0];const p2id=g.players?.[1];
+      const p1n=g.pNames?.[p1id]||`User${p1id}`;
+      const p2n=g.pNames?.[p2id]||`User${p2id}`;
+      const isAI=g.isAIGame||g.players?.includes(-999999);
+      return `<div class="req">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <div style="font-weight:700;font-size:13px;">${esc(p1n)} <span style="color:var(--sub);">vs</span> ${esc(p2n)}</div>
+            <div style="font-size:11px;color:var(--sub);margin-top:2px;">${isAI?'🤖 AI Game':'👥 Real Game'} &nbsp;•&nbsp; ${new Date(g.createdAt).toLocaleString()}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="bdg ${g.winner===-1?'bg-blu':g.winner?'bg-grn':'bg-red'}">${esc(g.winnerName||'—')}</div>
+            <div style="font-size:10px;color:var(--sub);margin-top:3px;">ID: ${esc(g.gameId?.slice(-8)||'-')}</div>
+          </div>
+        </div>
+        <button class="btn btn-red btn-sm" style="width:100%;" onclick="delGame('${esc(g.gameId)}','${esc(g.winnerName||'')}')">🗑 ဖျက်မည် (ငွေပါနုတ်မည်)</button>
+      </div>`;
+    }).join('');
+    // Pagination
+    const pag=document.getElementById('histPag');pag.innerHTML='';
+    for(let i=1;i<=data.pages;i++){
+      const b=document.createElement('button');
+      b.className='btn btn-sm '+(i===histPage?'btn-pur':'btn-gh');
+      b.textContent=i;b.onclick=()=>loadHistory(i);pag.appendChild(b);
+    }
+  }catch(e){el.innerHTML='<div style="color:#f87171;padding:16px;text-align:center;">Error: '+esc(e.message)+'</div>';}
+}
+
+async function delGame(gameId, winnerName){
+  if(!confirm(`ပွဲစဉ် "${gameId}" ကို ဖျက်မည်။\n⚠️ ${winnerName==='🤝 သရေ'?'သရေကျ ငွေပြန်အမ်းကို နုတ်မည်':'အနိုင်ရသူ '+winnerName+' ၏ ဆုငွေ '+WIN_PRIZE+' MMK နုတ်မည်'}\n\nဆက်လုပ်မည်?`))return;
+  try{
+    await api(`/api/admin/games/${encodeURIComponent(gameId)}`,{method:'DELETE'});
+    toast('🗑 ဖျက်ပြီးပါပြီ + ငွေပါနုတ်ပြီ',true);
+    loadHistory(histPage);
+  }catch(e){toast('Error: '+e.message,false);}
 }
 
 /* ── Withdrawals ── */
