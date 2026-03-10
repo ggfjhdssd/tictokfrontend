@@ -266,7 +266,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
           <circle cx="36" cy="36" r="32" class="t-track"/>
           <circle cx="36" cy="36" r="32" class="t-fill" id="tFill" stroke="#f5b800"/>
         </svg>
-        <div class="t-num" id="tNum">60</div>
+        <div class="t-num" id="tNum">10</div>
       </div>
 
       <!-- Board -->
@@ -280,7 +280,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   </div><!-- /card -->
 
   <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.18);margin-top:10px;">
-    ⏱ 60 စက္ကန့် • ✖ ⭕ 4 ကွက်တန်း • 🏆 1,600 MMK
+    ⏱ 10 စက္ကန့် • ✖ ⭕ 4 ကွက်တန်း • 🏆 1,600 MMK
   </div>
 </div>
 
@@ -289,7 +289,7 @@ const tg=window.Telegram?.WebApp;
 if(tg){tg.expand();tg.ready();}
 
 const API='https://tiktocbackend.onrender.com';
-const TURN_S=60; // ✅ CHANGED: 10 → 60
+const TURN_S=10;
 
 let socket=null,user=null,gameId=null,mySymbol=null;
 let isMyTurn=false,turnTimer=null,searchTimer=null;
