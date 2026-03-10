@@ -129,6 +129,34 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   box-shadow:0 8px 24px rgba(0,0,0,.4);}
 .tok{background:rgba(0,204,136,.88);border:1px solid #34d399;color:#fff;}
 .terr{background:rgba(239,68,68,.88);border:1px solid #f87171;color:#fff;}
+
+/* ✅ NEW: Emote System */
+.emote-wrap{position:relative;display:inline-flex;align-items:center;}
+.emote-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  border-radius:8px;padding:4px 9px;cursor:pointer;font-size:13px;color:var(--sub);
+  transition:all .15s;white-space:nowrap;line-height:1;}
+.emote-btn:active{transform:scale(.9);background:rgba(255,255,255,.16);}
+.emote-popup{position:absolute;top:calc(100% + 8px);left:0;z-index:500;
+  background:rgba(18,12,40,.97);border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;padding:6px;min-width:172px;
+  box-shadow:0 12px 32px rgba(0,0,0,.55);
+  animation:epIn .18s cubic-bezier(.16,1,.3,1);display:none;}
+.emote-popup.open{display:block;}
+@keyframes epIn{from{opacity:0;transform:translateY(-8px) scale(.96)}to{opacity:1;transform:none}}
+.emote-item{padding:9px 13px;border-radius:10px;cursor:pointer;font-size:13px;
+  font-weight:600;color:var(--tx);transition:background .12s;white-space:nowrap;}
+.emote-item:hover,.emote-item:active{background:rgba(255,255,255,.1);}
+
+/* Speech bubble */
+#emoteBubble{position:fixed;bottom:120px;left:50%;transform:translateX(-50%) scale(0);
+  background:linear-gradient(135deg,rgba(92,53,245,.92),rgba(147,51,234,.92));
+  border:1px solid rgba(255,255,255,.2);border-radius:22px;padding:10px 20px;
+  font-size:15px;font-weight:700;color:#fff;z-index:9000;pointer-events:none;
+  box-shadow:0 8px 24px rgba(92,53,245,.4);text-align:center;max-width:280px;
+  transition:transform .28s cubic-bezier(.16,1,.3,1),opacity .28s;}
+#emoteBubble.show{transform:translateX(-50%) scale(1);}
+#emoteBubble.hide{transform:translateX(-50%) scale(0);opacity:0;}
+.eb-name{font-size:10px;font-weight:600;opacity:.7;margin-bottom:2px;}
 </style>
 </head>
 <body>
@@ -198,7 +226,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
         <div style="font-size:1.15rem;font-weight:900;margin-bottom:8px;">ကစားသူ ရှာနေသည်</div>
         <div class="dots" style="margin-bottom:14px;"><span></span><span></span><span></span></div>
         <div class="badge b-ylw" style="margin:0 auto 20px;display:inline-flex;">
-          ⏱ <span id="sSec">30</span> စက္ကန့်
+          ⏱ <span id="sSec">60</span> စက္ကန့်
         </div>
         <button class="btn btn-red" style="max-width:170px;margin:0 auto;" onclick="cancelSearch()">❌ ပယ်ဖျက်မည်</button>
       </div>
@@ -207,11 +235,24 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
     <!-- PLAYING -->
     <div id="sPlay" style="display:none;">
 
-      <!-- Player row -->
+      <!-- Player row ✅ CHANGED: added emote button -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;">
-        <div class="badge b-x" id="p1b">✖ <span id="p1n">You</span></div>
-        <div style="font-size:.8rem;font-weight:800;color:rgba(255,255,255,.25);">VS</div>
-        <div class="badge b-o" id="p2b">⭕ <span id="p2n">ကစားသူ</span></div>
+        <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
+          <div class="badge b-x" id="p1b" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">✖ <span id="p1n">You</span></div>
+          <!-- Emote trigger -->
+          <div class="emote-wrap" id="emoteWrap">
+            <button class="emote-btn" id="emoteBtn" onclick="toggleEmoteMenu(event)">💬</button>
+            <div class="emote-popup" id="emotePopup">
+              <div class="emote-item" onclick="sendEmote('😝 သနားတယ်')">😝 သနားတယ်</div>
+              <div class="emote-item" onclick="sendEmote('😂 ဟဟဘဲရမယ်')">😂 ဟဟဘဲရမယ်</div>
+              <div class="emote-item" onclick="sendEmote('🥺 မလုပ်ပါနဲ့')">🥺 မလုပ်ပါနဲ့</div>
+              <div class="emote-item" onclick="sendEmote('🫡 စောက်တောသား')">🫡 စောက်တောသား</div>
+              <div class="emote-item" onclick="sendEmote('🖕 ဘောဘဲ')">🖕 ဘောဘဲ</div>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:.8rem;font-weight:800;color:rgba(255,255,255,.25);padding:0 6px;">VS</div>
+        <div class="badge b-o" id="p2b" style="flex-shrink:0;">⭕ <span id="p2n">ကစားသူ</span></div>
       </div>
 
       <!-- Turn badge -->
@@ -225,7 +266,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
           <circle cx="36" cy="36" r="32" class="t-track"/>
           <circle cx="36" cy="36" r="32" class="t-fill" id="tFill" stroke="#f5b800"/>
         </svg>
-        <div class="t-num" id="tNum">10</div>
+        <div class="t-num" id="tNum">60</div>
       </div>
 
       <!-- Board -->
@@ -239,7 +280,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   </div><!-- /card -->
 
   <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.18);margin-top:10px;">
-    ⏱ 10 စက္ကန့် • ✖ ⭕ 4 ကွက်တန်း • 🏆 1,600 MMK
+    ⏱ 60 စက္ကန့် • ✖ ⭕ 4 ကွက်တန်း • 🏆 1,600 MMK
   </div>
 </div>
 
@@ -248,11 +289,11 @@ const tg=window.Telegram?.WebApp;
 if(tg){tg.expand();tg.ready();}
 
 const API='https://tiktocbackend.onrender.com';
-const TURN_S=10;
+const TURN_S=60; // ✅ CHANGED: 10 → 60
 
 let socket=null,user=null,gameId=null,mySymbol=null;
 let isMyTurn=false,turnTimer=null,searchTimer=null;
-let searchLeft=30,turnLeft=TURN_S;
+let searchLeft=60,turnLeft=TURN_S; // ✅ CHANGED: 30 → 60
 let board=newBoard(),toastT;
 
 function newBoard(){return Array(5).fill(null).map(()=>Array(5).fill(''));}
@@ -409,10 +450,22 @@ function connectSocket(joinId){
     setTimeout(()=>{showResult(data.winner,data.reason);refreshBal();},700);
   });
 
+  // ✅ CHANGED: opponentDisconnected now just a placeholder (instant loss on backend)
   socket.on('opponentDisconnected',()=>{
     stopTurnTimer();
     const b=document.getElementById('turnB');
-    b.className='badge b-ylw';b.textContent='⌛ ကစားသူ ပြန်ချိတ်ဆက်ရန် စောင့်သည်...';
+    b.className='badge b-ylw';b.textContent='⌛ ကစားသူ ထွက်သွားသည်...';
+  });
+
+  // ✅ NEW: Receive emote
+  socket.on('emoteReceived',({senderId, emote})=>{
+    const names = {};
+    // resolve display name from current player name elements
+    const isMine = senderId === user?.telegramId;
+    const senderName = isMine
+      ? (document.getElementById('p1n')?.textContent || 'You')
+      : (document.getElementById('p2n')?.textContent || 'ကစားသူ');
+    showEmoteBubble(isMine ? '😤 You' : `💬 ${senderName}`, emote);
   });
 
   socket.on('searchTimeout',()=>{stopSearchTimer();showState('idle');});
@@ -436,8 +489,8 @@ async function startSearch(joinId){
   }
   connectSocket(joinId);
   showState('search');
-  searchLeft=30;
-  document.getElementById('sSec').textContent=30;
+  searchLeft=60; // ✅ CHANGED
+  document.getElementById('sSec').textContent=60;
   socket.emit('findGame',{userId:user.telegramId});
 }
 
@@ -447,7 +500,7 @@ function cancelSearch(){
 }
 
 function startSearchTimer(){
-  clearInterval(searchTimer);searchLeft=30;
+  clearInterval(searchTimer);searchLeft=60; // ✅ CHANGED
   searchTimer=setInterval(()=>{
     searchLeft--;document.getElementById('sSec').textContent=searchLeft;
     if(searchLeft<=0){clearInterval(searchTimer);}
@@ -588,7 +641,44 @@ async function refreshBal(){
   }catch(e){}
 }
 
+
+// ✅ NEW: Emote System
+let emoteTimeout = null;
+
+function toggleEmoteMenu(e){
+  e.stopPropagation();
+  const popup = document.getElementById('emotePopup');
+  popup.classList.toggle('open');
+}
+
+document.addEventListener('click', () => {
+  document.getElementById('emotePopup')?.classList.remove('open');
+});
+
+function sendEmote(emote){
+  if(!socket?.connected || !gameId) return;
+  document.getElementById('emotePopup').classList.remove('open');
+  socket.emit('sendEmote', { gameId, emote });
+}
+
+function showEmoteBubble(name, emote){
+  const el = document.getElementById('emoteBubble');
+  const nameEl = document.getElementById('ebName');
+  const textEl = document.getElementById('ebText');
+  if(!el) return;
+  nameEl.textContent = name || '';
+  textEl.textContent = emote;
+  clearTimeout(emoteTimeout);
+  el.classList.remove('hide');
+  el.classList.add('show');
+  emoteTimeout = setTimeout(() => {
+    el.classList.add('hide');
+    el.classList.remove('show');
+  }, 2800);
+}
+
 window.addEventListener('DOMContentLoaded',init);
 </script>
+<div id="emoteBubble"><div class="eb-name" id="ebName"></div><div id="ebText"></div></div>
 </body>
 </html>
