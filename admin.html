@@ -200,6 +200,7 @@ input:checked+.sl2:before{transform:translateX(19px);}
     <button class="tab" onclick="showTab('history')">🎮 History</button>
     <button class="tab" onclick="showTab('msg')">📢 Message</button>
     <button class="tab" onclick="showTab('codes')">🎟️ Codes</button>
+    <button class="tab" onclick="showTab('agents')">🎯 Agents</button>
   </div>
 
   <!-- ─── DASHBOARD ─── -->
@@ -359,6 +360,17 @@ input:checked+.sl2:before{transform:translateX(19px);}
     </div>
     <div id="codeList"><div style="text-align:center;padding:24px;color:var(--sub);">Loading...</div></div>
   </div>
+
+  <!-- ─── AGENTS ─── -->
+  <div id="tab-agents" style="display:none;">
+    <div style="display:flex;gap:8px;margin-bottom:11px;">
+      <input class="inp" id="agentQ" placeholder="ID / နာမည် ရှာမည်" oninput="debounceAgent()">
+      <button class="btn btn-pur" style="padding:10px 14px;white-space:nowrap;" onclick="loadAgents(1)">ရှာ</button>
+    </div>
+    <div id="agentList"><div style="text-align:center;padding:28px;color:var(--sub);">Loading...</div></div>
+    <div id="agentPag" style="display:flex;justify-content:center;gap:7px;margin-top:10px;flex-wrap:wrap;"></div>
+    <div class="det-panel" id="agentDet"></div>
+  </div>
 </div><!-- /app -->
 
 <script>
@@ -443,7 +455,7 @@ async function tryAutoAuth(){
 }
 
 /* ── Tabs ── */
-const TABS=['dash','dep','wd','users','high','history','msg','codes'];
+const TABS=['dash','dep','wd','users','high','history','msg','codes','agents'];
 function showTab(name){
   TABS.forEach(t=>{
     document.getElementById('tab-'+t).style.display=t===name?'block':'none';
@@ -455,6 +467,7 @@ function showTab(name){
   if(name==='high')loadHighBalancers();
   if(name==='history')loadHistory(1);
   if(name==='codes')loadCodes();
+  if(name==='agents')loadAgents(1);
 }
 
 /* ── Dashboard ── */
@@ -689,7 +702,7 @@ async function loadUsers(page){
           <div>
             <div style="font-weight:700;font-size:14px;">${esc(u.firstName||u.username||'User')}
               ${u.isBanned?'<span class="bdg bg-red" style="margin-left:5px;">Banned</span>':''}
-              ${u.botMode?'<span class="bdg bg-blu" style="margin-left:5px;">🤖 Bot</span>':''}
+              ${u.botMode?'<span class="bdg bg-blu" style="margin-left:5px;">🤖 Bot</span>':''}${u.role==='agent'?'<span class="bdg bg-grn" style="margin-left:5px;">🎯 Agent</span>':''}
             </div>
             <div style="font-size:11px;color:var(--sub);margin-top:2px;">@${esc(u.username||'-')} • ID: ${u.telegramId}</div>
           </div>
@@ -774,6 +787,9 @@ async function showUserDet(u){
     </div>
     <button class="btn ${u.isBanned?'btn-grn':'btn-red'} btn-full" onclick="togBan(${u.telegramId},${!u.isBanned})">
       ${u.isBanned?'🔓 Unban User':'🚫 Ban User'}
+    </button>
+    <button class="btn ${u.role==='agent'?'btn-ylw':'btn-grn'} btn-full" style="margin-top:7px;" onclick="toggleAgent(${u.telegramId},${u.role!=='agent'})">
+      ${u.role==='agent'?'🎯 Agent ဖြုတ်မည်':'🎯 Make Agent'}
     </button>`;
   det.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -928,6 +944,128 @@ async function deleteCode(id,code){
     await api('/api/admin/redeem/'+id,{method:'DELETE'});
     toast('🗑️ Code ဖျက်ပြီ',true);loadCodes();
   }catch(e){toast('Error',false);}
+}
+
+/* ── Make Agent toggle ── */
+async function toggleAgent(tid, makeAgent){
+  if(!confirm(makeAgent?`User ${tid} ကို Agent အဖြစ် ခွင့်ပြုမည်?`:`Agent ${tid} မှ Role ဖြုတ်မည်?`))return;
+  try{
+    await api('/api/admin/users/'+tid+'/make-agent',{method:'POST',body:JSON.stringify({isAgent:makeAgent})});
+    toast(makeAgent?'🎯 Agent ခွင့်ပြုပြီ':'ℹ️ Agent Role ဖြုတ်ပြီ', true);
+    loadUsers(usrPage);
+    document.getElementById('userDet').style.display='none';
+  }catch(e){toast('Error: '+e.message,false);}
+}
+
+/* ── Agents Tab ── */
+let agentPage=1, agentDeb;
+function debounceAgent(){clearTimeout(agentDeb);agentDeb=setTimeout(()=>loadAgents(1),400);}
+
+const BOX_CFG=[
+  {box:1,people:5,bonus:500},{box:2,people:10,bonus:2000},{box:3,people:30,bonus:10000},
+  {box:4,people:50,bonus:30000},{box:5,people:70,bonus:80000},{box:6,people:100,bonus:300000},
+  {box:7,people:150,bonus:800000},{box:8,people:200,bonus:2000000},{box:9,people:70,bonus:1000000},
+  {box:10,people:10,bonus:2000,loop:true}
+];
+
+async function loadAgents(page=1){
+  agentPage=page;
+  const q=document.getElementById('agentQ').value.trim();
+  const el=document.getElementById('agentList');
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--sub);">Loading...</div>';
+  try{
+    const data=await api(`/api/admin/agents?page=${agentPage}&search=${encodeURIComponent(q)}`);
+    if(!data.agents.length){el.innerHTML='<div style="text-align:center;padding:22px;color:var(--sub);font-size:13px;">Agent မရှိသေးပါ</div>';return;}
+    el.innerHTML=data.agents.map(u=>`
+      <div class="ucard" onclick='showAgentDet(${JSON.stringify({...u,agentData:u.agentData})})'>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-weight:700;font-size:14px;">🎯 ${esc(u.firstName||u.username||'Agent')}
+              ${u.isBanned?'<span class="bdg bg-red" style="margin-left:5px;">Banned</span>':''}
+            </div>
+            <div style="font-size:11px;color:var(--sub);margin-top:2px;">@${esc(u.username||'-')} • ID: ${u.telegramId}</div>
+            <div style="font-size:11px;color:var(--blu);margin-top:2px;">👥 ${u.totalReferrals||0} referrals • 🏆 ${(u.agentData?.completedBoxes||0)}/10 boxes</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:900;color:var(--grn);font-size:14px;">${(u.balance||0).toLocaleString()} MMK</div>
+            <div style="font-size:10px;color:var(--ylw);">💰 Earned: ${(u.agentData?.totalEarned||0).toLocaleString()}</div>
+          </div>
+        </div>
+      </div>`).join('');
+    const pag=document.getElementById('agentPag');pag.innerHTML='';
+    for(let i=1;i<=data.pages;i++){
+      const b=document.createElement('button');
+      b.className='btn btn-sm '+(i===agentPage?'btn-pur':'btn-gh');
+      b.textContent=i;b.onclick=()=>loadAgents(i);pag.appendChild(b);
+    }
+  }catch(e){el.innerHTML='<div style="color:#f87171;padding:16px;text-align:center;">Error: '+esc(e.message)+'</div>';}
+}
+
+async function showAgentDet(u){
+  const det=document.getElementById('agentDet');
+  det.style.display='block';
+  const ms = u.agentData?.milestones||{};
+  const boxHtml = BOX_CFG.map(cfg=>{
+    const m = ms[cfg.box]||{current:0,claimed:false};
+    const pct = Math.min(100,Math.round((m.current/cfg.people)*100));
+    const done = m.claimed && !cfg.loop;
+    return `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px;margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <span style="font-weight:700;font-size:12px;">${cfg.loop?'♾️ ':''}Box ${cfg.box} ${done?'<span style="color:var(--grn)">✅</span>':''}</span>
+        <span style="font-size:11px;color:var(--ylw);">${(cfg.bonus).toLocaleString()} K bonus</span>
+      </div>
+      <div style="background:rgba(255,255,255,.07);border-radius:99px;height:5px;overflow:hidden;margin-bottom:4px;">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#5c35f5,#00cc88);border-radius:99px;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--sub);">
+        <span>${m.current}/${cfg.people} ယောက်</span>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-ylw" style="padding:3px 8px;font-size:10px;" onclick="adminAwardBox(${u.telegramId},${cfg.box})">🎁 Award</button>
+          <button class="btn btn-gh" style="padding:3px 8px;font-size:10px;" onclick="adminResetBox(${u.telegramId},${cfg.box})">🔄 Reset</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  det.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
+      <div style="font-weight:800;font-size:.95rem;">🎯 Agent Details</div>
+      <button class="btn btn-gh btn-sm" onclick="document.getElementById('agentDet').style.display='none'">✕</button>
+    </div>
+    <div class="det-grid">
+      <div class="det-item"><div class="rlbl">နာမည်</div><div style="font-weight:700;">${esc(u.firstName||'-')}</div></div>
+      <div class="det-item"><div class="rlbl">Telegram ID</div><div style="font-family:monospace;color:#93c5fd;">${u.telegramId}</div></div>
+      <div class="det-item"><div class="rlbl">လက်ကျန်</div><div style="font-weight:900;color:var(--grn);">${(u.balance||0).toLocaleString()} MMK</div></div>
+      <div class="det-item"><div class="rlbl">Referrals</div><div style="color:var(--blu);">${u.totalReferrals||0} ယောက်</div></div>
+      <div class="det-item"><div class="rlbl">Total Earned</div><div style="color:var(--ylw);">${(u.agentData?.totalEarned||0).toLocaleString()} MMK</div></div>
+      <div class="det-item"><div class="rlbl">Boxes ပြီး</div><div>${u.agentData?.completedBoxes||0}/10</div></div>
+    </div>
+    <div style="font-weight:800;font-size:.85rem;margin:12px 0 8px;">📦 Milestone Boxes</div>
+    ${boxHtml}
+    <button class="btn btn-red btn-full" style="margin-top:8px;" onclick="toggleAgent(${u.telegramId},false)">
+      🎯 Agent Role ဖြုတ်မည်
+    </button>`;
+  det.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function adminAwardBox(tid,box){
+  if(!confirm(`Box ${box} ဆုကြေး Agent ${tid} ကို ပေးမည်?`))return;
+  try{
+    const d=await api('/api/admin/agents/'+tid+'/award-box',{method:'POST',body:JSON.stringify({box})});
+    toast(`🎁 Box ${box} Award ပြီ (+${d.bonus?.toLocaleString()} MMK)`,true);
+    loadAgents(agentPage);
+    document.getElementById('agentDet').style.display='none';
+  }catch(e){toast('Error: '+e.message,false);}
+}
+
+async function adminResetBox(tid,box){
+  if(!confirm(`Box ${box} ကို Reset လုပ်မည်?`))return;
+  try{
+    await api('/api/admin/agents/'+tid+'/reset-box',{method:'POST',body:JSON.stringify({box})});
+    toast(`🔄 Box ${box} Reset ပြီ`,true);
+    loadAgents(agentPage);
+    document.getElementById('agentDet').style.display='none';
+  }catch(e){toast('Error: '+e.message,false);}
 }
 
 function parseErr(e){
