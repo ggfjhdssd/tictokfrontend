@@ -141,6 +141,14 @@ input:checked+.sl2:before{transform:translateX(19px);}
   margin-top:11px;display:none;}
 .det-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:13px;}
 .det-item{background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:10px;padding:10px;}
+
+/* Redeem code card */
+.ccode{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);
+  border-radius:12px;padding:12px;margin-bottom:8px;}
+.ccode.inactive{opacity:.45;filter:grayscale(.5);}
+.code-badge{font-family:monospace;font-size:1.05rem;font-weight:800;letter-spacing:.1em;
+  color:#fde68a;background:rgba(245,158,11,.14);padding:3px 10px;border-radius:7px;
+  display:inline-block;margin-bottom:6px;}
 </style>
 </head>
 <body>
@@ -191,6 +199,7 @@ input:checked+.sl2:before{transform:translateX(19px);}
     <button class="tab" onclick="showTab('high')">💰 High Balancers</button>
     <button class="tab" onclick="showTab('history')">🎮 History</button>
     <button class="tab" onclick="showTab('msg')">📢 Message</button>
+    <button class="tab" onclick="showTab('codes')">🎟️ Codes</button>
   </div>
 
   <!-- ─── DASHBOARD ─── -->
@@ -317,6 +326,27 @@ input:checked+.sl2:before{transform:translateX(19px);}
     </div>
   </div>
 
+
+  <!-- ─── REDEEM CODES ─── -->
+  <div id="tab-codes" style="display:none;">
+    <div class="card p4" style="margin-bottom:11px;">
+      <div class="stitle">🎟️ Code အသစ် ဖန်တီးရန်</div>
+      <div class="fcol">
+        <input class="inp" id="rcCode" placeholder="Code နာမည် (ဥပမာ: PROMO100)"
+          oninput="this.value=this.value.toUpperCase()" style="letter-spacing:.1em;font-weight:700;">
+        <input class="inp" id="rcAmount" type="number" placeholder="ပေးမည့် ပမာဏ (MMK)" min="1">
+        <input class="inp" id="rcMax" type="number" placeholder="အများဆုံး သုံးနိုင်သောလူဦးရေ (0 = ကန့်သတ်မဲ့)" min="0">
+        <button class="btn btn-ylw btn-full" onclick="createCode()">
+          <span id="rcTx">✅ Code ဖန်တီးမည်</span><div class="spn" id="rcSp" style="display:none;"></div>
+        </button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;">
+      <div style="font-weight:800;font-size:.93rem;">📋 Codes အားလုံး</div>
+      <button class="btn btn-gh btn-sm" onclick="loadCodes()">🔄 Refresh</button>
+    </div>
+    <div id="codeList"><div style="text-align:center;padding:24px;color:var(--sub);">Loading...</div></div>
+  </div>
 </div><!-- /app -->
 
 <script>
@@ -401,7 +431,7 @@ async function tryAutoAuth(){
 }
 
 /* ── Tabs ── */
-const TABS=['dash','dep','wd','users','high','history','msg'];
+const TABS=['dash','dep','wd','users','high','history','msg','codes'];
 function showTab(name){
   TABS.forEach(t=>{
     document.getElementById('tab-'+t).style.display=t===name?'block':'none';
@@ -412,6 +442,7 @@ function showTab(name){
   if(name==='users')loadUsers(1);
   if(name==='high')loadHighBalancers();
   if(name==='history')loadHistory(1);
+  if(name==='codes')loadCodes();
 }
 
 /* ── Dashboard ── */
@@ -796,6 +827,83 @@ setInterval(async()=>{
     document.getElementById('dPW').textContent=d.pendingWithdrawals||0;
   }catch(e){}
 },30000);
+
+
+/* ── Redeem Codes ── */
+async function createCode(){
+  const code=document.getElementById('rcCode').value.trim().toUpperCase();
+  const amount=parseInt(document.getElementById('rcAmount').value);
+  const maxUses=parseInt(document.getElementById('rcMax').value)||1;
+  if(!code)return toast('Code နာမည် ထည့်ပါ',false);
+  if(!amount||amount<1)return toast('ပမာဏ ဖြည့်ပါ',false);
+  document.getElementById('rcTx').style.display='none';
+  document.getElementById('rcSp').style.display='inline-block';
+  try{
+    const d=await api('/api/admin/redeem/create',{method:'POST',
+      body:JSON.stringify({code,amount,maxUses})});
+    toast(`✅ Code "${d.code.code}" ဖန်တီးပြီ`,true);
+    document.getElementById('rcCode').value='';
+    document.getElementById('rcAmount').value='';
+    document.getElementById('rcMax').value='';
+    loadCodes();
+  }catch(e){toast(parseErr(e)||'Error',false);}
+  document.getElementById('rcTx').style.display='inline';
+  document.getElementById('rcSp').style.display='none';
+}
+
+async function loadCodes(){
+  const el=document.getElementById('codeList');
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--sub);">Loading...</div>';
+  try{
+    const data=await api('/api/admin/redeem/list');
+    if(!data.length){
+      el.innerHTML='<div style="text-align:center;padding:22px;color:var(--sub);font-size:13px;">Code မရှိသေးပါ</div>';return;
+    }
+    el.innerHTML=data.map(c=>`
+      <div class="ccode${c.isActive?'':' inactive'}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+          <div>
+            <div class="code-badge">${esc(c.code)}</div>
+            <div style="font-size:13px;margin-bottom:3px;">
+              💰 <b style="color:#34d399;">${c.amount.toLocaleString()} MMK</b>
+              &nbsp;•&nbsp;
+              👥 ${c.usedBy.length}/${c.maxUses===0?'∞':c.maxUses} ယောက်
+            </div>
+            <div style="font-size:11px;color:var(--sub);">${new Date(c.createdAt).toLocaleString()}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+            <button class="btn btn-sm ${c.isActive?'btn-ylw':'btn-grn'}" onclick="toggleCode('${c._id}')">
+              ${c.isActive?'🔴 ပိတ်မည်':'🟢 ဖွင့်မည်'}
+            </button>
+            <button class="btn btn-red btn-sm" onclick="deleteCode('${c._id}','${esc(c.code)}')">🗑️ ဖျက်</button>
+          </div>
+        </div>
+        ${c.usedBy.length>0?`<div style="font-size:11px;color:var(--sub);margin-top:7px;border-top:1px solid rgba(255,255,255,.07);padding-top:7px;">
+          သုံးသူများ ID: ${c.usedBy.slice(0,8).join(', ')}${c.usedBy.length>8?' …':''}
+        </div>`:''}
+      </div>`).join('');
+  }catch(e){el.innerHTML='<div style="color:#f87171;padding:16px;text-align:center;">Error: '+esc(e.message)+'</div>';}
+}
+
+async function toggleCode(id){
+  try{
+    const d=await api('/api/admin/redeem/'+id+'/toggle',{method:'POST'});
+    toast(d.isActive?'🟢 Code ဖွင့်ပြီ':'🔴 Code ပိတ်ပြီ',true);
+    loadCodes();
+  }catch(e){toast('Error',false);}
+}
+
+async function deleteCode(id,code){
+  if(!confirm(`Code "${code}" ကို ဖျက်မည်?`))return;
+  try{
+    await api('/api/admin/redeem/'+id,{method:'DELETE'});
+    toast('🗑️ Code ဖျက်ပြီ',true);loadCodes();
+  }catch(e){toast('Error',false);}
+}
+
+function parseErr(e){
+  try{return JSON.parse(e.message).error||e.message;}catch{return e.message;}
+}
 
 window.addEventListener('DOMContentLoaded',tryAutoAuth);
 </script>
