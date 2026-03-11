@@ -156,6 +156,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   padding:9px 12px;margin-top:9px;font-size:12px;color:#fca5a5;text-align:center;}
 .infobox{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:10px;
   padding:11px;margin-bottom:12px;font-size:13px;color:#93c5fd;line-height:1.7;}
+
+/* Redeem Code panel accent */
+.btn-gld{background:linear-gradient(135deg,#b45309,#f59e0b);box-shadow:0 4px 14px rgba(245,158,11,.22);}
+.rdm-code-inp{letter-spacing:.14em;text-transform:uppercase;font-weight:700;font-size:15px;}
 </style>
 </head>
 <body>
@@ -212,6 +216,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
       <button class="btn btn-grn" onclick="togglePanel('dep')">💰 ငွေဖြည့်ရန်</button>
       <button class="btn btn-blu" onclick="togglePanel('wd')">💸 ငွေထုတ်ရန်</button>
     </div>
+    <button class="btn btn-gld" style="margin-bottom:9px;" onclick="togglePanel('rdm')">🎟️ Redeem Code ထည့်ရန်</button>
     <a href="/play.html" class="btn btn-play" style="text-decoration:none;">🎮 ယခုပင် ကစားမည်</a>
   </div>
 
@@ -261,6 +266,24 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
         <input class="inp" id="wA" type="number" placeholder="ထုတ်ယူမည့် ပမာဏ (အနည်းဆုံး 3,000)" min="3000">
         <button class="btn btn-blu" onclick="submitWd()">
           <span id="wTx">💸 ထုတ်ယူမည်</span><div class="spn" id="wSp" style="display:none;"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Redeem Code Panel -->
+  <div class="panel" id="rdm">
+    <div class="card p4">
+      <div class="stitle">🎟️ Redeem Code ထည့်ရန်</div>
+      <div class="infobox" style="background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.2);color:#fde68a;">
+        🎁 Promo Code ရိုက်ထည့်ပြီး ဆုကြေးငွေ ရယူပါ!
+      </div>
+      <div class="fcol">
+        <input class="inp rdm-code-inp" id="rdmCode" placeholder="CODE ရိုက်ထည့်ပါ" autocomplete="off"
+          oninput="this.value=this.value.toUpperCase()">
+        <button class="btn btn-gld" onclick="submitRedeem()">
+          <span id="rdmTx">🎟️ အတည်ပြုမည်</span><div class="spn" id="rdmSp" style="display:none;"></div>
         </button>
       </div>
     </div>
@@ -340,7 +363,7 @@ function toast(msg,ok=true,dur=3200){
 
 /* ── panel ── */
 function togglePanel(id){
-  ['dep','wd'].forEach(p=>{
+  ['dep','wd','rdm'].forEach(p=>{
     const e=document.getElementById(p);
     if(p===id)e.classList.toggle('open');else e.classList.remove('open');
   });
@@ -559,6 +582,33 @@ setInterval(async()=>{
     }
   }catch(e){}
 },60000);
+
+
+/* ── Redeem Code ── */
+async function submitRedeem(){
+  const code=document.getElementById('rdmCode').value.trim().toUpperCase();
+  if(!code)return toast('Code ရိုက်ထည့်ပါ',false);
+  if(!user)return toast('Login ဝင်ပါ',false);
+  document.getElementById('rdmTx').style.display='none';
+  document.getElementById('rdmSp').style.display='inline-block';
+  try{
+    const r=await fetch(`${API}/api/redeem`,{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({telegramId:user.telegramId,code})});
+    const res=await r.json();
+    if(res.success){
+      user.balance=Number(res.newBalance);
+      animN('balNum',user.balance);
+      toast(`🎉 ${res.amount.toLocaleString()} MMK ရရှိပြီ!`,true,5000);
+      document.getElementById('rdmCode').value='';
+      togglePanel('rdm');
+    }else{
+      toast(res.error||'Code မမှန်ပါ',false,4500);
+    }
+  }catch(e){toast('ဆာဗာ ချိတ်ဆက်မှု ပြဿနာ',false);}
+  document.getElementById('rdmTx').style.display='inline';
+  document.getElementById('rdmSp').style.display='none';
+}
 
 window.addEventListener('DOMContentLoaded',init);
 </script>
