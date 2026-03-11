@@ -248,6 +248,18 @@ input:checked+.sl2:before{transform:translateX(19px);}
         </div>
         <label class="tog"><input type="checkbox" id="fakeNotifTog" onchange="toggleFakeNotif(this.checked)"><span class="sl2"></span></label>
       </div>
+      <!-- Fake Notif Interval -->
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bdr);">
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px;">⏱ Fake Noti တစ်ကြိမ် ပို့ချိန် (မိနစ်)</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input class="inp" id="fakeIntervalInp" type="number" min="1" max="60" placeholder="မိနစ် (Default: 3)"
+            style="flex:1;padding:9px 12px;font-size:13px;">
+          <button class="btn btn-pur" style="padding:9px 14px;white-space:nowrap;width:auto;" onclick="saveFakeInterval()">
+            <span id="fiTx">💾 သတ်မှတ်</span><div class="spn" id="fiSp" style="display:none;"></div>
+          </button>
+        </div>
+        <div style="font-size:11px;color:var(--sub);margin-top:5px;">လက်ရှိ: <b id="curInterval" style="color:#a78bfa;">— မိနစ်</b></div>
+      </div>
     </div>
     <button class="btn btn-pur btn-full" onclick="loadDash()">🔄 Refresh</button>
   </div>
@@ -354,7 +366,7 @@ const tg=window.Telegram?.WebApp;
 if(tg){tg.expand();tg.ready();}
 
 const API='https://tiktocbackend.onrender.com';
-const WIN_PRIZE=1600;
+const WIN_PRIZE=800;
 let adminId=null,toastT,usrPage=1,srchDeb;
 
 /* ── toast ── */
@@ -462,6 +474,9 @@ async function loadDash(){
     document.getElementById('maintTog').checked=!!s.maintenance;
     document.getElementById('allBotTog').checked=!!s.allBotMode;
     document.getElementById('fakeNotifTog').checked=!!s.fakeNotifications;
+    const iv=s.fakeNotifInterval||3;
+    document.getElementById('fakeIntervalInp').value=iv;
+    document.getElementById('curInterval').textContent=iv+' မိနစ်';
   }catch(e){toast('Stats load မဖြစ်ပါ: '+e.message,false);}
 }
 
@@ -484,6 +499,20 @@ async function toggleFakeNotif(on){
     await api('/api/admin/fakenotifications',{method:'POST',body:JSON.stringify({enabled:on})});
     toast(on?'📢 Fake Notifications ON':'📢 Fake Notifications OFF',true);
   }catch(e){toast('Error',false);}
+}
+
+async function saveFakeInterval(){
+  const val=parseInt(document.getElementById('fakeIntervalInp').value)||3;
+  if(val<1||val>60){toast('1–60 မိနစ်ကြား ဖြည့်ပါ',false);return;}
+  document.getElementById('fiTx').style.display='none';
+  document.getElementById('fiSp').style.display='inline-block';
+  try{
+    await api('/api/admin/fakenotifinterval',{method:'POST',body:JSON.stringify({interval:val})});
+    document.getElementById('curInterval').textContent=val+' မိနစ်';
+    toast('✅ Interval '+val+' မိနစ် သတ်မှတ်ပြီ',true);
+  }catch(e){toast('Error: '+e.message,false);}
+  document.getElementById('fiTx').style.display='inline';
+  document.getElementById('fiSp').style.display='none';
 }
 
 /* ── Deposits ── */
