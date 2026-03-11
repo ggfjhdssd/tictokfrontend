@@ -218,41 +218,41 @@ async function init(){
   const tg = window.Telegram?.WebApp;
   if(tg){ tg.ready(); tg.expand(); }
 
-  // 1) Try initData (Telegram WebApp button clicked)
-  const initData = tg?.initData || '';
-  // 2) Try sessionStorage fallback (user already authenticated via index.html)
-  const savedId = sessionStorage.getItem('uid');
-
-  if(initData){
-    // Auth via Telegram initData
-    try {
-      const r = await fetch(BACKEND+'/api/auth', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({initData})
-      });
-      const d = await r.json();
-      if(d.telegramId){
-        myTelegramId = d.telegramId;
-        sessionStorage.setItem('uid', myTelegramId);
-      }
-    } catch(e){ console.error('initData auth failed:', e); }
+  // Priority 1: initDataUnsafe.user.id — fastest, direct from Telegram WebApp
+  const tgU = tg?.initDataUnsafe?.user;
+  if(tgU?.id){
+    myTelegramId = tgU.id;
+    sessionStorage.setItem('uid', myTelegramId);
   }
 
-  // 3) If no initData, use saved sessionStorage ID
-  if(!myTelegramId && savedId){
-    myTelegramId = parseInt(savedId);
-  }
-
-  // 4) Try initDataUnsafe user as last resort
+  // Priority 2: sessionStorage saved ID (from previous login)
   if(!myTelegramId){
-    const tgU = tg?.initDataUnsafe?.user;
-    if(tgU?.id) myTelegramId = tgU.id;
+    const savedId = sessionStorage.getItem('uid');
+    if(savedId) myTelegramId = parseInt(savedId);
+  }
+
+  // Priority 3: initData API verify (last resort)
+  if(!myTelegramId){
+    const initData = tg?.initData || '';
+    if(initData){
+      try {
+        const r = await fetch(BACKEND+'/api/auth', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({initData})
+        });
+        const d = await r.json();
+        if(d.telegramId){
+          myTelegramId = d.telegramId;
+          sessionStorage.setItem('uid', myTelegramId);
+        }
+      } catch(e){ console.error('initData auth failed:', e); }
+    }
   }
 
   if(!myTelegramId){
     document.getElementById('ldr').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    showError('ဦးစွာ Bot မှ /start နှိပ်ပြီး ဝင်ပါ');
+    showError('Bot မှ /agent command နှိပ်ပြီး Panel ကိုဖွင့်ပါ');
     return;
   }
 
