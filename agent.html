@@ -159,6 +159,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 
 <script>
 const BACKEND = 'https://tiktocbackend.onrender.com';
+const API = BACKEND;
 
 const BOX_CONFIG = [
   { box:1, people:5,  perPerson:1000,  bonus:500,      label:'Box 1' },
@@ -175,6 +176,7 @@ const BOX_CONFIG = [
 
 let tgUser = null;
 let agentData = null;
+let myTelegramId = null;
 
 function toast(msg, ok=true){
   const t = document.getElementById('toast');
@@ -185,7 +187,7 @@ function toast(msg, ok=true){
 
 async function api(path, opts={}){
   const headers = {'Content-Type':'application/json', ...(opts.headers||{})};
-  if(tgUser) headers['x-telegram-id'] = tgUser.id;
+  if(myTelegramId) headers['x-telegram-id'] = myTelegramId;
   const res = await fetch(BACKEND+path, {...opts, headers});
   const data = await res.json();
   if(!res.ok) throw new Error(data.error||'Error');
@@ -216,21 +218,58 @@ async function init(){
   const tg = window.Telegram?.WebApp;
   if(tg){ tg.ready(); tg.expand(); }
 
-  tgUser = tg?.initDataUnsafe?.user;
-  if(!tgUser){ showError('Telegram မှ ဖွင့်ပါ'); return; }
+  // 1) Try initData (Telegram WebApp button clicked)
+  const initData = tg?.initData || '';
+  // 2) Try sessionStorage fallback (user already authenticated via index.html)
+  const savedId = sessionStorage.getItem('uid');
+
+  if(initData){
+    // Auth via Telegram initData
+    try {
+      const r = await fetch(BACKEND+'/api/auth', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({initData})
+      });
+      const d = await r.json();
+      if(d.telegramId){
+        myTelegramId = d.telegramId;
+        sessionStorage.setItem('uid', myTelegramId);
+      }
+    } catch(e){ console.error('initData auth failed:', e); }
+  }
+
+  // 3) If no initData, use saved sessionStorage ID
+  if(!myTelegramId && savedId){
+    myTelegramId = parseInt(savedId);
+  }
+
+  // 4) Try initDataUnsafe user as last resort
+  if(!myTelegramId){
+    const tgU = tg?.initDataUnsafe?.user;
+    if(tgU?.id) myTelegramId = tgU.id;
+  }
+
+  if(!myTelegramId){
+    document.getElementById('ldr').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    showError('ဦးစွာ Bot မှ /start နှိပ်ပြီး ဝင်ပါ');
+    return;
+  }
 
   try {
     agentData = await api('/api/agent/panel');
+    document.getElementById('ldr').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
     render();
   } catch(e){
-    if(e.message.includes('agent') || e.message.includes('Agent')){
+    document.getElementById('ldr').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    if(e.message.includes('agent') || e.message.includes('Agent') || e.message.includes('မဟုတ်')){
       showNotAgent();
     } else {
       showError(e.message);
     }
   }
-  document.getElementById('ldr').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
 }
 
 function showError(msg){
