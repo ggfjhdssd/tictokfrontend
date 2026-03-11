@@ -244,7 +244,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
       <div class="fcol">
         <input class="inp" id="dN" placeholder="သင့် KPay အမည်">
         <input class="inp" id="dT" placeholder="Transaction ID">
-        <input class="inp" id="dA" type="number" placeholder="ငွေပမာဏ (အနည်းဆုံး 1,000 MMK)" min="1000">
+        <input class="inp" id="dA" type="number" placeholder="ငွေပမာဏ (အနည်းဆုံး 500 MMK)" min="500">
         <button class="btn btn-grn" onclick="submitDep()">
           <span id="dTx">✅ အတည်ပြုမည်</span><div class="spn" id="dSp" style="display:none;"></div>
         </button>
@@ -257,13 +257,13 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
     <div class="card p4">
       <div class="stitle">💸 ငွေထုတ်ယူရန်</div>
       <div class="infobox">
-        • အနည်းဆုံး <b style="color:#fff;">3,000 MMK</b> မှ ထုတ်ယူနိုင်သည်<br>
+        • အနည်းဆုံး <b style="color:#fff;">2,500 MMK</b> မှ ထုတ်ယူနိုင်သည်<br>
         • Admin စစ်ဆေးပြီး ၂၄ နာရီအတွင်း လွှဲပေးမည်
       </div>
       <div class="fcol">
         <input class="inp" id="wN" placeholder="ငွေလက်ခံမည့် KPay အမည်">
         <input class="inp" id="wP" placeholder="KPay ဖုန်းနံပါတ် (09xxxxxxx)">
-        <input class="inp" id="wA" type="number" placeholder="ထုတ်ယူမည့် ပမာဏ (အနည်းဆုံး 3,000)" min="3000">
+        <input class="inp" id="wA" type="number" placeholder="ထုတ်ယူမည့် ပမာဏ (အနည်းဆုံး 2,500)" min="2500">
         <button class="btn btn-blu" onclick="submitWd()">
           <span id="wTx">💸 ထုတ်ယူမည်</span><div class="spn" id="wSp" style="display:none;"></div>
         </button>
@@ -293,7 +293,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   <div class="card p4 fu d3" style="margin-bottom:11px;">
     <div class="stitle">🔗 သူငယ်ချင်းများဖိတ်ခေါ်ရန်</div>
     <div style="font-size:13px;color:var(--sub);margin-bottom:12px;line-height:1.7;">
-      သူငယ်ချင်း တစ်ယောက်မှ <b style="color:#fff;">1,000 MMK</b> ဖြည့်တိုင်း
+      သူငယ်ချင်း တစ်ယောက်မှ <b style="color:#fff;">500 MMK</b> ဖြည့်တိုင်း
       သင် <b style="color:var(--grn);">100 MMK</b> ရမည်!
     </div>
     <div class="refwrap" style="margin-bottom:13px;">
@@ -317,17 +317,17 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
       <div class="ritem">
         <div class="rico">🎟️</div>
         <div class="rlbl">ပွဲဝင်ကြေး</div>
-        <div class="rval">1,000 MMK</div>
+        <div class="rval">500 MMK</div>
       </div>
       <div class="ritem" style="border-color:rgba(0,204,136,.16);background:rgba(0,204,136,.03);">
         <div class="rico">🏆</div>
         <div class="rlbl">အနိုင်ရမည်</div>
-        <div class="rval" style="color:var(--grn);">1,600 MMK</div>
+        <div class="rval" style="color:var(--grn);">800 MMK</div>
       </div>
       <div class="ritem" style="border-color:rgba(61,158,255,.16);background:rgba(61,158,255,.03);">
         <div class="rico">🤝</div>
         <div class="rlbl">သရေကျလျှင်</div>
-        <div class="rval" style="color:var(--blu);">500 MMK ပြန်ရ</div>
+        <div class="rval" style="color:var(--blu);">250 MMK ပြန်ရ</div>
       </div>
       <div class="ritem" style="border-color:rgba(245,184,0,.16);background:rgba(245,184,0,.03);">
         <div class="rico">⏱️</div>
@@ -517,7 +517,7 @@ async function submitDep(){
   const amt=parseInt(document.getElementById('dA').value);
   if(!name)return toast('KPay အမည် ဖြည့်ပါ',false);
   if(!txn)return toast('Transaction ID ဖြည့်ပါ',false);
-  if(!amt||amt<1000)return toast('အနည်းဆုံး 1,000 MMK ဖြည့်ပါ',false);
+  if(!amt||amt<500)return toast('အနည်းဆုံး 500 MMK ဖြည့်ပါ',false);
   if(!user)return toast('Login ဝင်ပါ',false);
   setLd('d',true);
   try{
@@ -542,7 +542,7 @@ async function submitWd(){
   const amt=Number(rawAmt.replace(/,/g,''));
   if(!name)return toast('KPay အမည် ဖြည့်ပါ',false);
   if(!num)return toast('KPay ဖုန်းနံပါတ် ဖြည့်ပါ',false);
-  if(isNaN(amt)||amt<3000)return toast('အနည်းဆုံး 3,000 MMK ဖြည့်ပါ',false);
+  if(isNaN(amt)||amt<2500)return toast('အနည်းဆုံး 2,500 MMK ဖြည့်ပါ',false);
   if(!user)return toast('Login ဝင်ပါ',false);
   // Always re-fetch fresh balance before withdraw — avoid stale data
   try{
