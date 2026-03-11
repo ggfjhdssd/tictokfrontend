@@ -416,19 +416,32 @@ function connectSocket(joinId){
 
     buildBoard();showState('play');updateTurnUI();startTurnTimer();
 
-    // ── Haptic feedback: strong vibration on match found ──
+    // ── Haptic feedback: Mobile Legends style 3-second strong pulse ──
     try {
       if (tg?.HapticFeedback) {
-        // Primary: Telegram API notification success
-        tg.HapticFeedback.notificationOccurred('success');
-        // Secondary: chain 3 impacts for 2-second "strong" feel
-        setTimeout(()=>tg.HapticFeedback.impactOccurred('heavy'),180);
-        setTimeout(()=>tg.HapticFeedback.impactOccurred('heavy'),380);
-        setTimeout(()=>tg.HapticFeedback.impactOccurred('medium'),600);
-        setTimeout(()=>tg.HapticFeedback.notificationOccurred('success'),900);
+        // notificationOccurred('success') + rapid heavy impacts for 3 seconds
+        // Pattern: success → heavy × 2 → success → heavy × 2 → ... every 200ms
+        const hapticSequence=[
+          {t:0,   fn:()=>tg.HapticFeedback.notificationOccurred('success')},
+          {t:200, fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:400, fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:600, fn:()=>tg.HapticFeedback.notificationOccurred('success')},
+          {t:800, fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:1000,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:1200,fn:()=>tg.HapticFeedback.notificationOccurred('success')},
+          {t:1400,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:1600,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:1800,fn:()=>tg.HapticFeedback.notificationOccurred('success')},
+          {t:2000,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:2200,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:2400,fn:()=>tg.HapticFeedback.notificationOccurred('success')},
+          {t:2600,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:2800,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+        ];
+        hapticSequence.forEach(({t,fn})=>setTimeout(()=>{try{fn();}catch(e){}},t));
       } else if (navigator.vibrate) {
-        // Fallback Web Vibration API: 2-second pattern
-        navigator.vibrate([120,60,120,60,200,80,200,80,300]);
+        // Fallback: continuous 3-second vibration
+        navigator.vibrate(3000);
       }
     } catch(e) { /* haptic not supported */ }
   });
@@ -446,28 +459,53 @@ function connectSocket(joinId){
     document.getElementById('p2n').textContent=mySymbol==='X'?oppName:myName;
     buildBoard();showState('play');updateTurnUI();startTurnTimer();
 
-    // ── Haptic feedback: strong vibration on match found ──
+    // ── Haptic feedback: Mobile Legends style 3-second strong pulse ──
     try {
       if (tg?.HapticFeedback) {
-        // Primary: Telegram API notification success
-        tg.HapticFeedback.notificationOccurred('success');
-        // Secondary: chain 3 impacts for 2-second "strong" feel
-        setTimeout(()=>tg.HapticFeedback.impactOccurred('heavy'),180);
-        setTimeout(()=>tg.HapticFeedback.impactOccurred('heavy'),380);
-        setTimeout(()=>tg.HapticFeedback.impactOccurred('medium'),600);
-        setTimeout(()=>tg.HapticFeedback.notificationOccurred('success'),900);
+        // notificationOccurred('success') + rapid heavy impacts for 3 seconds
+        // Pattern: success → heavy × 2 → success → heavy × 2 → ... every 200ms
+        const hapticSequence=[
+          {t:0,   fn:()=>tg.HapticFeedback.notificationOccurred('success')},
+          {t:200, fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:400, fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:600, fn:()=>tg.HapticFeedback.notificationOccurred('success')},
+          {t:800, fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:1000,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:1200,fn:()=>tg.HapticFeedback.notificationOccurred('success')},
+          {t:1400,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:1600,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:1800,fn:()=>tg.HapticFeedback.notificationOccurred('success')},
+          {t:2000,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:2200,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:2400,fn:()=>tg.HapticFeedback.notificationOccurred('success')},
+          {t:2600,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+          {t:2800,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
+        ];
+        hapticSequence.forEach(({t,fn})=>setTimeout(()=>{try{fn();}catch(e){}},t));
       } else if (navigator.vibrate) {
-        // Fallback Web Vibration API: 2-second pattern
-        navigator.vibrate([120,60,120,60,200,80,200,80,300]);
+        // Fallback: continuous 3-second vibration
+        navigator.vibrate(3000);
       }
     } catch(e) { /* haptic not supported */ }
   });
 
   socket.on('moveMade',(data)=>{
     board=data.board;
-    isMyTurn=data.currentTurn===user.telegramId;
-    updateBoard(data.row,data.col,data.symbol);
-    updateTurnUI();resetTurnTimer();
+    // FIX: server now always sends currentTurn; gameEnded=true means no next turn
+    if(!data.gameEnded){
+      isMyTurn = (data.currentTurn !== null && data.currentTurn !== undefined)
+                   ? data.currentTurn===user.telegramId
+                   : false;
+      updateBoard(data.row,data.col,data.symbol);
+      updateTurnUI();
+      resetTurnTimer();
+    } else {
+      // Winning/draw move: just render the cell, timers stop on gameOver
+      isMyTurn=false;
+      updateBoard(data.row,data.col,data.symbol);
+      updateTurnUI();
+      stopTurnTimer();
+    }
   });
 
   socket.on('turnChanged',(data)=>{
