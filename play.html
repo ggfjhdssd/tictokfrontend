@@ -206,16 +206,16 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
         <div style="background:rgba(0,0,0,.18);border:1px solid var(--bdr);border-radius:13px;
           padding:15px;margin-bottom:20px;text-align:left;">
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;">
-            <span style="color:var(--sub);">ဝင်ကြေး</span><span style="font-weight:700;">1,000 MMK</span>
+            <span style="color:var(--sub);">ဝင်ကြေး</span><span style="font-weight:700;">500 MMK</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;">
-            <span style="color:var(--sub);">နိုင်ရင် ရမည်</span><span style="font-weight:700;color:var(--grn);">1,600 MMK</span>
+            <span style="color:var(--sub);">နိုင်ရင် ရမည်</span><span style="font-weight:700;color:var(--grn);">800 MMK</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13px;">
-            <span style="color:var(--sub);">သရေကျလျှင်</span><span style="font-weight:700;color:var(--blu);">500 MMK ပြန်ရ</span>
+            <span style="color:var(--sub);">သရေကျလျှင်</span><span style="font-weight:700;color:var(--blu);">250 MMK ပြန်ရ</span>
           </div>
         </div>
-        <button class="btn btn-play" onclick="startSearch()">🎮 PLAY (1,000 MMK)</button>
+        <button class="btn btn-play" onclick="startSearch()">🎮 PLAY (500 MMK)</button>
       </div>
     </div>
 
@@ -280,7 +280,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   </div><!-- /card -->
 
   <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.18);margin-top:10px;">
-    ⏱ 10 စက္ကန့် • ✖ ⭕ 4 ကွက်တန်း • 🏆 1,600 MMK
+    ⏱ 10 စက္ကန့် • ✖ ⭕ 4 ကွက်တန်း • 🏆 800 MMK
   </div>
 </div>
 
@@ -383,7 +383,7 @@ function connectSocket(joinId){
 
   socket.on('insufficientBalance',(d)=>{
     stopSearchTimer();showState('idle');
-    toast(`လက်ကျန်ငွေ မလုံလောက်ပါ — ကျန်: ${(d?.balance||0).toLocaleString()} MMK (1,000 MMK လိုသည်)`,false,5000);
+    toast(`လက်ကျန်ငွေ မလုံလောက်ပါ — ကျန်: ${(d?.balance||0).toLocaleString()} MMK (500 MMK လိုသည်)`,false,5000);
   });
 
   socket.on('waitingForPlayer',({gameId:gid})=>{
@@ -415,6 +415,22 @@ function connectSocket(joinId){
     }
 
     buildBoard();showState('play');updateTurnUI();startTurnTimer();
+
+    // ── Haptic feedback: strong vibration on match found ──
+    try {
+      if (tg?.HapticFeedback) {
+        // Primary: Telegram API notification success
+        tg.HapticFeedback.notificationOccurred('success');
+        // Secondary: chain 3 impacts for 2-second "strong" feel
+        setTimeout(()=>tg.HapticFeedback.impactOccurred('heavy'),180);
+        setTimeout(()=>tg.HapticFeedback.impactOccurred('heavy'),380);
+        setTimeout(()=>tg.HapticFeedback.impactOccurred('medium'),600);
+        setTimeout(()=>tg.HapticFeedback.notificationOccurred('success'),900);
+      } else if (navigator.vibrate) {
+        // Fallback Web Vibration API: 2-second pattern
+        navigator.vibrate([120,60,120,60,200,80,200,80,300]);
+      }
+    } catch(e) { /* haptic not supported */ }
   });
 
   socket.on('gameResumed',(data)=>{
@@ -429,6 +445,22 @@ function connectSocket(joinId){
     document.getElementById('p1n').textContent=mySymbol==='X'?myName:oppName;
     document.getElementById('p2n').textContent=mySymbol==='X'?oppName:myName;
     buildBoard();showState('play');updateTurnUI();startTurnTimer();
+
+    // ── Haptic feedback: strong vibration on match found ──
+    try {
+      if (tg?.HapticFeedback) {
+        // Primary: Telegram API notification success
+        tg.HapticFeedback.notificationOccurred('success');
+        // Secondary: chain 3 impacts for 2-second "strong" feel
+        setTimeout(()=>tg.HapticFeedback.impactOccurred('heavy'),180);
+        setTimeout(()=>tg.HapticFeedback.impactOccurred('heavy'),380);
+        setTimeout(()=>tg.HapticFeedback.impactOccurred('medium'),600);
+        setTimeout(()=>tg.HapticFeedback.notificationOccurred('success'),900);
+      } else if (navigator.vibrate) {
+        // Fallback Web Vibration API: 2-second pattern
+        navigator.vibrate([120,60,120,60,200,80,200,80,300]);
+      }
+    } catch(e) { /* haptic not supported */ }
   });
 
   socket.on('moveMade',(data)=>{
@@ -484,8 +516,8 @@ async function startSearch(joinId){
   if(!user){toast('Login ဝင်ပါ',false);return;}
   // FIX: always fetch fresh balance before checking — avoids stale/string balance bugs
   await refreshBal();
-  if(Number(user.balance)<1000){
-    toast('လက်ကျန်ငွေ မလုံလောက်ပါ (1,000 MMK လိုသည်)',false,4000);return;
+  if(Number(user.balance)<500){
+    toast('လက်ကျန်ငွေ မလုံလောက်ပါ (500 MMK လိုသည်)',false,4000);return;
   }
   connectSocket(joinId);
   showState('search');
@@ -609,10 +641,10 @@ function showResult(winner,reason){
 
   if(winner===user.telegramId){
     em.textContent='🏆';tit.textContent='အနိုင်ရပြီ!';tit.style.color='#4ade80';
-    sub.textContent='ဆုကြေး +1,600 MMK ရရှိပြီ!';
+    sub.textContent='ဆုကြေး +800 MMK ရရှိပြီ!';
   }else if(winner===-1){
     em.textContent='🤝';tit.textContent='သရေကျပြီ!';tit.style.color='#60a5fa';
-    sub.textContent='+500 MMK ပြန်ရပြီ';
+    sub.textContent='+250 MMK ပြန်ရပြီ';
   }else{
     em.textContent='😔';tit.textContent='ရှုံးပြီ';tit.style.color='#f87171';
     sub.textContent=reason==='timeout'?'⏱ အချိန်ကုန်သွားသည်':
