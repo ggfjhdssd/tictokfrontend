@@ -158,7 +158,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 <div class="toast" id="toast"></div>
 
 <script>
-const BACKEND = 'https://tiktocbackend.onrender.com';
+const BACKEND = 'https://tiktocbackend-zktq.onrender.com';
 const API = BACKEND;
 
 const BOX_CONFIG = [
@@ -352,7 +352,7 @@ function showNotAgent(){
 function render(){
   const d = agentData;
   const refLink = BACKEND.replace('tiktocbackend','tictokfrontend').replace('onrender.com','vercel.app')
-    .replace('https://tiktocbackend.onrender.com', `https://t.me/${d.botUsername||'tictoe1_bot'}?start=${d.referralCode}`);
+    .replace('https://tiktocbackend-zktq.onrender.com', `https://t.me/${d.botUsername||'tictoe1_bot'}?start=${d.referralCode}`);
   const botLink = `https://t.me/${d.botUsername||'tictoe1_bot'}?start=${d.referralCode}`;
 
   const app = document.getElementById('app');
