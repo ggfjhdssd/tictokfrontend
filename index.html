@@ -102,6 +102,16 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   font-family:'Outfit',sans-serif;transition:.15s;}
 .cpybtn:active{transform:scale(.92);}
 
+/* Payment Method Tabs */
+.pay-tabs{display:flex;gap:8px;margin-bottom:12px;}
+.pay-tab{flex:1;padding:10px 0;border-radius:10px;border:2px solid var(--bdr);
+  background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);font-weight:700;
+  font-size:13px;cursor:pointer;font-family:'Outfit',sans-serif;transition:.2s;text-align:center;}
+.pay-tab.active-kpay{border-color:#f5b800;color:#f5b800;background:rgba(245,184,0,.1);}
+.pay-tab.active-wave{border-color:#00c4a8;color:#00c4a8;background:rgba(0,196,168,.1);}
+.wave-kbox{background:rgba(0,0,0,.18);border:1px solid rgba(0,196,168,.22);border-radius:13px;padding:13px;}
+.wave-num{font-family:monospace;font-size:1.1rem;font-weight:700;letter-spacing:.06em;color:#00e5cc;}
+
 /* Referral send */
 .refwrap{position:relative;}
 .refinp{padding-right:80px;font-size:13px;color:#a78bfa;}
@@ -224,7 +234,15 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   <div class="panel" id="dep">
     <div class="card p4">
       <div class="stitle">💰 ငွေဖြည့်သွင်းရန်</div>
-      <div class="kbox" style="margin-bottom:12px;">
+
+      <!-- Payment Method Tabs -->
+      <div class="pay-tabs">
+        <button class="pay-tab active-kpay" id="dep-tab-kpay" onclick="switchDepMethod('kpay')">📱 KPay</button>
+        <button class="pay-tab" id="dep-tab-wave" onclick="switchDepMethod('wave')">🌊 Wave Pay</button>
+      </div>
+
+      <!-- KPay Info -->
+      <div id="dep-kpay-info" class="kbox" style="margin-bottom:12px;">
         <div style="font-size:11px;color:var(--ylw);font-weight:700;margin-bottom:9px;">📱 အောက်ပါ KPay သို့ ငွေလွှဲပါ</div>
         <div class="krow">
           <div>
@@ -238,11 +256,33 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
             <div style="font-size:10px;color:var(--sub);text-transform:uppercase;margin-bottom:2px;">အကောင့်ပိုင်ရှင်</div>
             <div style="font-weight:700;">Daw Mi Thaung</div>
           </div>
+          <button class="cpybtn" onclick="copyTxt('Daw Mi Thaung')">Copy</button>
         </div>
         <div class="warnbox">⚠️ ငွေလွှဲပြီးမှသာ Form ဖြည့်ပါ</div>
       </div>
+
+      <!-- Wave Pay Info -->
+      <div id="dep-wave-info" class="wave-kbox" style="margin-bottom:12px;display:none;">
+        <div style="font-size:11px;color:#00e5cc;font-weight:700;margin-bottom:9px;">🌊 အောက်ပါ Wave Pay သို့ ငွေလွှဲပါ</div>
+        <div class="krow">
+          <div>
+            <div style="font-size:10px;color:var(--sub);text-transform:uppercase;margin-bottom:2px;">Wave Pay နံပါတ်</div>
+            <div class="wave-num">09792310926</div>
+          </div>
+          <button class="cpybtn" style="background:rgba(0,196,168,.14);color:#00e5cc;" onclick="copyTxt('09792310926')">Copy</button>
+        </div>
+        <div class="krow" style="margin-bottom:0;">
+          <div>
+            <div style="font-size:10px;color:var(--sub);text-transform:uppercase;margin-bottom:2px;">အကောင့်ပိုင်ရှင်</div>
+            <div style="font-weight:700;">Min Oak Soe</div>
+          </div>
+          <button class="cpybtn" style="background:rgba(0,196,168,.14);color:#00e5cc;" onclick="copyTxt('Min Oak Soe')">Copy</button>
+        </div>
+        <div class="warnbox" style="background:rgba(0,196,168,.07);border-color:rgba(0,196,168,.2);color:#a7f3ee;">⚠️ ငွေလွှဲပြီးမှသာ Form ဖြည့်ပါ</div>
+      </div>
+
       <div class="fcol">
-        <input class="inp" id="dN" placeholder="သင့် KPay အမည်">
+        <input class="inp" id="dN" placeholder="သင့် အမည် (KPay / Wave Pay)">
         <input class="inp" id="dT" placeholder="Transaction ID">
         <input class="inp" id="dA" type="number" placeholder="ငွေပမာဏ (အနည်းဆုံး 500 MMK)" min="500">
         <button class="btn btn-grn" onclick="submitDep()">
@@ -260,9 +300,16 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
         • အနည်းဆုံး <b style="color:#fff;">2,500 MMK</b> မှ ထုတ်ယူနိုင်သည်<br>
         • Admin စစ်ဆေးပြီး ၂၄ နာရီအတွင်း လွှဲပေးမည်
       </div>
+
+      <!-- Payment Method Tabs -->
+      <div class="pay-tabs">
+        <button class="pay-tab active-kpay" id="wd-tab-kpay" onclick="switchWdMethod('kpay')">📱 KPay ဖြင့် ထုတ်မည်</button>
+        <button class="pay-tab" id="wd-tab-wave" onclick="switchWdMethod('wave')">🌊 Wave Pay ဖြင့် ထုတ်မည်</button>
+      </div>
+
       <div class="fcol">
-        <input class="inp" id="wN" placeholder="ငွေလက်ခံမည့် KPay အမည်">
-        <input class="inp" id="wP" placeholder="KPay ဖုန်းနံပါတ် (09xxxxxxx)">
+        <input class="inp" id="wN" placeholder="ငွေလက်ခံမည့် အမည်">
+        <input class="inp" id="wP" placeholder="ဖုန်းနံပါတ် (09xxxxxxx)">
         <input class="inp" id="wA" type="number" placeholder="ထုတ်ယူမည့် ပမာဏ (အနည်းဆုံး 2,500)" min="2500">
         <button class="btn btn-blu" onclick="submitWd()">
           <span id="wTx">💸 ထုတ်ယူမည်</span><div class="spn" id="wSp" style="display:none;"></div>
@@ -379,7 +426,7 @@ function copyTxt(t){
 function sendRef(){
   const l=document.getElementById('refL').value;
   if(!l||l==='Loading...')return;
-  const u=`https://t.me/share/url?url=${encodeURIComponent(l)}&text=${encodeURIComponent('ဂိမ်းဆော့ရတာ ဝါသနာပါလား? ပိုက်ဆံရော ရချင်လား?\nအားတဲ့အချိန်မှာ ဖုန်းလေးနှိပ်ရုံနဲ့ Balance တွေ တက်လာမယ့် TicToeTic!\n🚫 ရင်းနှီးမြှုပ်နှံရန် မလို\n✅ ကစားသူ အချင်းချင်း ပြိုင်ရုံပဲ\n🚀 မြန်ဆန်တဲ့ ငွေထုတ်စနစ်\nလက်မနှေးဘဲ ဒီမှာ Join ပါ 👇')}`;
+  const u=`https://t.me/share/url?url=${encodeURIComponent(l)}&text=${encodeURIComponent('ဂိမ်းဆော့ရတာ ဝါသနာပါလား? ပိုက်ဆံရော ရချင်လား?\nအားတဲ့အချိန်မှာ ဖုန်းလေးနှိပ်ရုံနဲ့ ပိုက်ဆံတွေ ရလာမယ့် TicToeTic!\n🚫 ရင်းနှီးမြှုပ်နှံရန် မလို\n✅ ကစားသူ အချင်းချင်း ပြိုင်ရုံပဲ\n🚀 မြန်ဆန်တဲ့ ငွေထုတ်စနစ်\nလက်မနှေးဘဲ ဒီမှာ Join ပါ 👇')}`;
   if(tg?.openTelegramLink)tg.openTelegramLink(u);
   else window.open(u,'_blank');
 }
@@ -511,11 +558,33 @@ function setLd(p,on){
   document.getElementById(p+'Sp').style.display=on?'inline-block':'none';
 }
 
+// Payment method state
+let depMethod = 'kpay';
+let wdMethod  = 'kpay';
+
+function switchDepMethod(m) {
+  depMethod = m;
+  document.getElementById('dep-kpay-info').style.display = m === 'kpay' ? '' : 'none';
+  document.getElementById('dep-wave-info').style.display = m === 'wave' ? '' : 'none';
+  document.getElementById('dep-tab-kpay').className = 'pay-tab' + (m === 'kpay' ? ' active-kpay' : '');
+  document.getElementById('dep-tab-wave').className = 'pay-tab' + (m === 'wave' ? ' active-wave' : '');
+  document.getElementById('dN').placeholder = m === 'wave' ? 'သင့် Wave Pay အမည်' : 'သင့် KPay အမည်';
+}
+
+function switchWdMethod(m) {
+  wdMethod = m;
+  document.getElementById('wd-tab-kpay').className = 'pay-tab' + (m === 'kpay' ? ' active-kpay' : '');
+  document.getElementById('wd-tab-wave').className = 'pay-tab' + (m === 'wave' ? ' active-wave' : '');
+  document.getElementById('wN').placeholder = m === 'wave' ? 'ငွေလက်ခံမည့် Wave Pay အမည်' : 'ငွေလက်ခံမည့် KPay အမည်';
+  document.getElementById('wP').placeholder = m === 'wave' ? 'Wave Pay ဖုန်းနံပါတ် (09xxxxxxx)' : 'KPay ဖုန်းနံပါတ် (09xxxxxxx)';
+}
+
 async function submitDep(){
   const name=document.getElementById('dN').value.trim();
   const txn=document.getElementById('dT').value.trim();
   const amt=parseInt(document.getElementById('dA').value);
-  if(!name)return toast('KPay အမည် ဖြည့်ပါ',false);
+  const methodLabel = depMethod === 'wave' ? 'Wave Pay' : 'KPay';
+  if(!name)return toast(`${methodLabel} အမည် ဖြည့်ပါ`,false);
   if(!txn)return toast('Transaction ID ဖြည့်ပါ',false);
   if(!amt||amt<500)return toast('အနည်းဆုံး 500 MMK ဖြည့်ပါ',false);
   if(!user)return toast('Login ဝင်ပါ',false);
@@ -523,7 +592,7 @@ async function submitDep(){
   try{
     const r=await fetch(`${API}/api/deposit`,{method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({telegramId:user.telegramId,kpayName:name,transactionId:txn,amount:amt})});
+      body:JSON.stringify({telegramId:user.telegramId,kpayName:name,transactionId:txn,amount:amt,paymentMethod:depMethod})});
     const res=await r.json();
     if(res.success){
       toast('တောင်းဆိုမှု အောင်မြင်! Admin စစ်ဆေးနေသည်',true,4000);
@@ -537,11 +606,12 @@ async function submitDep(){
 async function submitWd(){
   const name=document.getElementById('wN').value.trim();
   const num=document.getElementById('wP').value.trim();
+  const methodLabel = wdMethod === 'wave' ? 'Wave Pay' : 'KPay';
   // FIX: strip commas before parsing — parseInt('3,000') = 3, Number('3000') = 3000
   const rawAmt=document.getElementById('wA').value;
   const amt=Number(rawAmt.replace(/,/g,''));
-  if(!name)return toast('KPay အမည် ဖြည့်ပါ',false);
-  if(!num)return toast('KPay ဖုန်းနံပါတ် ဖြည့်ပါ',false);
+  if(!name)return toast(`${methodLabel} အမည် ဖြည့်ပါ`,false);
+  if(!num)return toast(`${methodLabel} ဖုန်းနံပါတ် ဖြည့်ပါ`,false);
   if(isNaN(amt)||amt<2500)return toast('အနည်းဆုံး 2,500 MMK ဖြည့်ပါ',false);
   if(!user)return toast('Login ဝင်ပါ',false);
   // Always re-fetch fresh balance before withdraw — avoid stale data
@@ -558,7 +628,7 @@ async function submitWd(){
   try{
     const r=await fetch(`${API}/api/withdraw`,{method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({telegramId:user.telegramId,kpayName:name,kpayNumber:num,amount:amt})});
+      body:JSON.stringify({telegramId:user.telegramId,kpayName:name,kpayNumber:num,amount:amt,paymentMethod:wdMethod})});
     const res=await r.json();
     if(res.success){
       user.balance=Number(res.newBalance);animN('balNum',user.balance);
