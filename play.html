@@ -377,7 +377,11 @@ function connectSocket(joinId){
 
   socket.on('error',(d)=>{
     const msg=typeof d==='string'?d:d?.msg||'Error';
-    stopSearchTimer();showState('idle');
+    // FIX: Only go to idle state if NOT currently in a game
+    // During gameplay, only show toast — do NOT reset the board
+    if (!gameId) {
+      stopSearchTimer();showState('idle');
+    }
     toast(msg,false,5000);
   });
 
@@ -455,8 +459,18 @@ function connectSocket(joinId){
     const myName=names[user.telegramId]||'You';
     const oppId=Object.keys(names).find(k=>parseInt(k)!==user.telegramId);
     const oppName=oppId?names[oppId]:'ကစားသူ';
-    document.getElementById('p1n').textContent=mySymbol==='X'?myName:oppName;
-    document.getElementById('p2n').textContent=mySymbol==='X'?oppName:myName;
+    if(mySymbol==='X'){
+      document.getElementById('p1n').textContent=myName;
+      document.getElementById('p2n').textContent=oppName;
+      document.getElementById('p1b').className='badge b-x';
+      document.getElementById('p2b').className='badge b-o';
+    } else {
+      // FIX: p1 = X player (opponent), p2 = O player (me)
+      document.getElementById('p1n').textContent=oppName;
+      document.getElementById('p2n').textContent=myName;
+      document.getElementById('p1b').className='badge b-x';
+      document.getElementById('p2b').className='badge b-o';
+    }
     buildBoard();showState('play');updateTurnUI();startTurnTimer();
 
     // ── Haptic feedback: Mobile Legends style 3-second strong pulse ──
@@ -517,6 +531,9 @@ function connectSocket(joinId){
     stopTurnTimer();
     board=data.board;
     refreshAllCells();
+    const endedGameId = gameId;
+    gameId = null; // FIX: clear gameId so error handler won't block idle state on next search
+    mySymbol = null;
     setTimeout(()=>{showResult(data.winner,data.reason);refreshBal();},700);
   });
 
@@ -540,6 +557,16 @@ function connectSocket(joinId){
 
   socket.on('searchTimeout',()=>{stopSearchTimer();showState('idle');});
   socket.on('searchCancelled',()=>{stopSearchTimer();showState('idle');});
+
+  // ── FIX: Handle fake disconnect (sabotage AI triggers this) ──
+  socket.on('fakeDisconnect',(data)=>{
+    stopTurnTimer();
+    const b=document.getElementById('turnB');
+    if(b){ b.className='badge b-ylw'; b.textContent='📶 ချိတ်ဆက်မှု ပြဿနာ...'; }
+    // Disable all board cells
+    document.querySelectorAll('.cell').forEach(c=>{ c.classList.add('dis'); c.classList.remove('my'); });
+    toast(data?.message || '📶 ချိတ်ဆက်မှု ကျသွားသည်...', false, 8000);
+  });
 }
 
 /* ── States ── */
@@ -697,7 +724,8 @@ function playAgain(){
   document.getElementById('resOv').style.display='none';
   if(socket){socket.disconnect();socket=null;}
   gameId=null;mySymbol=null;isMyTurn=false;board=newBoard();
-  showState('idle');
+  // FIX: refresh balance first so stale "insufficient funds" doesn't block play
+  refreshBal().then(()=>{ showState('idle'); });
 }
 
 async function refreshBal(){
