@@ -581,17 +581,25 @@ async function loadDep(s){
 }
 
 async function cfmDep(id){
+  const btn=event.target;
+  if(btn.disabled)return;
   if(!confirm('Confirm ပြုလုပ်မည်?'))return;
+  btn.disabled=true;btn.textContent='⏳...';
   try{await api(`/api/admin/deposits/${id}/confirm`,{method:'POST'});toast('✅ Confirmed!',true);loadDep();}
-  catch(e){toast('Error: '+e.message,false);}
+  catch(e){toast('Error: '+esc(parseErr(e)),false);}
+  finally{btn.disabled=false;btn.textContent='✅ Confirm';}
 }
 async function rejDep(id){
+  const btn=event.target;
+  if(btn.disabled)return;
   const reason=prompt('Reject အကြောင်းပြချက် ရေးပါ (Optional):','');
   if(reason===null)return;
+  btn.disabled=true;btn.textContent='⏳...';
   try{
     await api(`/api/admin/deposits/${id}/reject`,{method:'POST',body:JSON.stringify({reason:reason.trim()})});
     toast('Rejected',true);loadDep();
-  }catch(e){toast('Error: '+e.message,false);}
+  }catch(e){toast('Error: '+esc(parseErr(e)),false);}
+  finally{btn.disabled=false;btn.textContent='❌ Reject';}
 }
 
 /* ── Game History ── */
@@ -686,14 +694,22 @@ async function loadWd(s){
 }
 
 async function cfmWd(id){
+  const btn=event.target;
+  if(btn.disabled)return;
   if(!confirm('Confirm ပြုလုပ်မည်?\n(ငွေလွှဲပြီးမှ confirm ပါ)'))return;
+  btn.disabled=true;btn.textContent='⏳...';
   try{await api(`/api/admin/withdrawals/${id}/confirm`,{method:'POST'});toast('✅ Confirmed!',true);loadWd();}
-  catch(e){toast('Error: '+e.message,false);}
+  catch(e){toast('Error: '+esc(parseErr(e)),false);}
+  finally{btn.disabled=false;btn.textContent='✅ Confirm';}
 }
 async function rejWd(id){
+  const btn=event.target;
+  if(btn.disabled)return;
   if(!confirm('Reject ပြုလုပ်မည်? (ငွေပြန်အမ်းမည်)'))return;
+  btn.disabled=true;btn.textContent='⏳...';
   try{await api(`/api/admin/withdrawals/${id}/reject`,{method:'POST'});toast('Rejected & Refunded',true);loadWd();}
-  catch(e){toast('Error: '+e.message,false);}
+  catch(e){toast('Error: '+esc(parseErr(e)),false);}
+  finally{btn.disabled=false;btn.textContent='❌ Reject';}
 }
 
 /* ── Users ── */
