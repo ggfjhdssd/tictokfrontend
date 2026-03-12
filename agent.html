@@ -174,7 +174,6 @@ const BOX_CONFIG = [
   { box:10,people:10, perPerson:2000,  bonus:2000,     label:'Box 10 ♾️', loop:true }
 ];
 
-let tgUser = null;
 let agentData = null;
 let myTelegramId = null;
 
@@ -192,6 +191,55 @@ async function api(path, opts={}){
   const data = await res.json();
   if(!res.ok) throw new Error(data.error||'Error');
   return data;
+}
+
+// ── Parse user ID from Telegram initData string (manual decode) ──
+function parseUserFromInitData(initDataStr) {
+  if (!initDataStr) return null;
+  try {
+    const params = new URLSearchParams(initDataStr);
+    const userStr = params.get('user');
+    if (userStr) return JSON.parse(userStr);
+  } catch(e) {}
+  return null;
+}
+
+// ── Wait for Telegram WebApp to be fully ready, then resolve user ──
+function waitForTelegramUser(tg, timeoutMs = 3000) {
+  return new Promise((resolve) => {
+    // If already have user data, resolve immediately
+    if (tg?.initDataUnsafe?.user?.id) {
+      resolve(tg.initDataUnsafe.user);
+      return;
+    }
+    // Try parsing from initData string directly
+    const parsed = parseUserFromInitData(tg?.initData);
+    if (parsed?.id) {
+      resolve(parsed);
+      return;
+    }
+    // Wait a bit for Telegram to inject data (some clients are slow)
+    let elapsed = 0;
+    const interval = setInterval(() => {
+      elapsed += 100;
+      const u = tg?.initDataUnsafe?.user;
+      if (u?.id) {
+        clearInterval(interval);
+        resolve(u);
+        return;
+      }
+      const p = parseUserFromInitData(tg?.initData);
+      if (p?.id) {
+        clearInterval(interval);
+        resolve(p);
+        return;
+      }
+      if (elapsed >= timeoutMs) {
+        clearInterval(interval);
+        resolve(null); // timeout
+      }
+    }, 100);
+  });
 }
 
 function fmtK(n){
@@ -216,60 +264,69 @@ function shareLink(link){
 
 async function init(){
   const tg = window.Telegram?.WebApp;
+
+  // Step 1: Call tg.ready() first so Telegram knows the app is ready
   if(tg){ tg.ready(); tg.expand(); }
 
-  // Priority 1: initDataUnsafe.user.id — fastest, direct from Telegram WebApp
-  const tgU = tg?.initDataUnsafe?.user;
-  if(tgU?.id){
-    myTelegramId = tgU.id;
-    sessionStorage.setItem('uid', myTelegramId);
+  // Step 2: Wait for Telegram to fully inject user data (up to 3 seconds)
+  let tgUser = tg ? await waitForTelegramUser(tg, 3000) : null;
+
+  // Step 3: Set myTelegramId from Telegram user
+  if(tgUser?.id){
+    myTelegramId = tgUser.id;
+    sessionStorage.setItem('uid', String(myTelegramId));
   }
 
-  // Priority 2: sessionStorage saved ID (from previous login)
+  // Step 4: Fallback — sessionStorage from previous index.html login
   if(!myTelegramId){
     const savedId = sessionStorage.getItem('uid');
-    if(savedId) myTelegramId = parseInt(savedId);
-  }
-
-  // Priority 3: initData API verify (last resort)
-  if(!myTelegramId){
-    const initData = tg?.initData || '';
-    if(initData){
-      try {
-        const r = await fetch(BACKEND+'/api/auth', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({initData})
-        });
-        const d = await r.json();
-        if(d.telegramId){
-          myTelegramId = d.telegramId;
-          sessionStorage.setItem('uid', myTelegramId);
-        }
-      } catch(e){ console.error('initData auth failed:', e); }
+    if(savedId && !isNaN(parseInt(savedId))){
+      myTelegramId = parseInt(savedId);
     }
   }
 
+  // Step 5: Last resort — call /api/auth with initData string
+  if(!myTelegramId && tg?.initData){
+    try {
+      const r = await fetch(BACKEND+'/api/auth', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({initData: tg.initData})
+      });
+      const d = await r.json();
+      if(d?.telegramId){
+        myTelegramId = d.telegramId;
+        sessionStorage.setItem('uid', String(myTelegramId));
+      }
+    } catch(e){ console.error('initData auth err:', e); }
+  }
+
+  // Step 6: No ID found — show friendly error
   if(!myTelegramId){
-    document.getElementById('ldr').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    showError('Bot မှ /agent command နှိပ်ပြီး Panel ကိုဖွင့်ပါ');
+    hideLdr();
+    showError('Telegram Bot မှ /agent command နှိပ်ပြီး ဤ Panel ကိုဖွင့်ပါ');
     return;
   }
 
+  // Step 7: Load agent panel data
   try {
     agentData = await api('/api/agent/panel');
-    document.getElementById('ldr').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
+    hideLdr();
     render();
   } catch(e){
-    document.getElementById('ldr').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    if(e.message.includes('agent') || e.message.includes('Agent') || e.message.includes('မဟုတ်')){
+    hideLdr();
+    const msg = e.message || '';
+    if(msg.includes('agent') || msg.includes('Agent') || msg.includes('မဟုတ်') || msg.includes('403')){
       showNotAgent();
     } else {
-      showError(e.message);
+      showError('ဆာဗာ ချိတ်ဆက်မှု မအောင်မြင်ပါ: ' + msg);
     }
   }
+}
+
+function hideLdr(){
+  document.getElementById('ldr').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
 }
 
 function showError(msg){
@@ -449,7 +506,16 @@ async function loadSubs(){
 
 function esc(s){ return(s||'').toString().replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 
-window.addEventListener('DOMContentLoaded', init);
+// ── Entry point: ensure Telegram WebApp script is loaded before init ──
+function startApp(){
+  if(window.Telegram?.WebApp){
+    init();
+  } else {
+    // Script may still be loading, wait briefly
+    setTimeout(()=>{ init(); }, 300);
+  }
+}
+window.addEventListener('DOMContentLoaded', startApp);
 </script>
 </body>
 </html>
