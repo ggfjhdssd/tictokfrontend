@@ -1080,6 +1080,21 @@ async function showAgentDet(u){
       </div>
       <div style="font-size:11px;color:var(--sub);">⚠️ + ထည့်ရင် Balance ပေါင်း၊ - ထည့်ရင် Balance နုတ်</div>
     </div>
+    <div style="background:rgba(245,184,0,.06);border:1px solid rgba(245,184,0,.2);border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div class="rlbl" style="margin-bottom:7px;">📱 Agent KPay နံပါတ် သတ်မှတ်မည် (Deposit Page)</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <input class="inp" id="agKpayNum" type="tel" placeholder="09xxxxxxxxx" value="${esc(u.agentData?.agentKpayNumber||'')}">
+        <input class="inp" id="agKpayName" placeholder="အကောင့်ပိုင်ရှင် နာမည်" value="${esc(u.agentData?.agentKpayName||'')}">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);cursor:pointer;">
+          <input type="checkbox" id="agHasWave" ${u.agentData?.hasWave?'checked':''} style="width:16px;height:16px;">
+          Wave Pay ပါ ထည့်ပေးမည်
+        </label>
+        <button class="btn btn-ylw" onclick="saveAgentKpay(${u.telegramId})">
+          <span id="agKpayTx">💾 KPay Info သိမ်းမည်</span><div class="spn" id="agKpaySp" style="display:none;"></div>
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--sub);margin-top:5px;">ဤ Agent ၏ Link မှ ဝင်လာသော User များ ဤ KPay ကိုသာ မြင်ရမည်</div>
+    </div>
     <div style="font-weight:800;font-size:.85rem;margin:12px 0 8px;">📦 Milestone Boxes</div>
     ${boxHtml}
     <button class="btn btn-red btn-full" style="margin-top:8px;" onclick="toggleAgent(${u.telegramId},false)">
@@ -1109,6 +1124,23 @@ async function adjAgentBal(tid){
     document.getElementById('agentDet').style.display='none';
     loadAgents(agentPage);
   }catch(e){toast('Error: '+e.message,false);}
+}
+
+async function saveAgentKpay(tid){
+  const kpayNumber=document.getElementById('agKpayNum').value.trim();
+  const kpayName=document.getElementById('agKpayName').value.trim();
+  const hasWave=document.getElementById('agHasWave').checked;
+  if(!kpayNumber)return toast('KPay နံပါတ် ထည့်ပါ',false);
+  document.getElementById('agKpayTx').style.display='none';
+  document.getElementById('agKpaySp').style.display='inline-block';
+  try{
+    await api(`/api/admin/agents/${tid}/payment-info`,{method:'POST',body:JSON.stringify({kpayNumber,kpayName,hasWave})});
+    toast('✅ KPay Info သိမ်းပြီ',true);
+    document.getElementById('agentDet').style.display='none';
+    loadAgents(agentPage);
+  }catch(e){toast('Error: '+e.message,false);}
+  document.getElementById('agKpayTx').style.display='inline';
+  document.getElementById('agKpaySp').style.display='none';
 }
 
 /* ── Invited From Agent ── */

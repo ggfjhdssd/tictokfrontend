@@ -247,16 +247,16 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
         <div class="krow">
           <div>
             <div style="font-size:10px;color:var(--sub);text-transform:uppercase;margin-bottom:2px;">KPay နံပါတ်</div>
-            <div class="knum">09792310926</div>
+            <div class="knum" id="dep-kpay-number">09792310926</div>
           </div>
-          <button class="cpybtn" onclick="copyTxt('09792310926')">Copy</button>
+          <button class="cpybtn" id="dep-kpay-copy-num" onclick="copyTxt('09792310926')">Copy</button>
         </div>
         <div class="krow" style="margin-bottom:0;">
           <div>
             <div style="font-size:10px;color:var(--sub);text-transform:uppercase;margin-bottom:2px;">အကောင့်ပိုင်ရှင်</div>
-            <div style="font-weight:700;">Daw Mi Thaung</div>
+            <div style="font-weight:700;" id="dep-kpay-name">Daw Mi Thaung</div>
           </div>
-          <button class="cpybtn" onclick="copyTxt('Daw Mi Thaung')">Copy</button>
+          <button class="cpybtn" id="dep-kpay-copy-name" onclick="copyTxt('Daw Mi Thaung')">Copy</button>
         </div>
         <div class="warnbox">⚠️ ငွေလွှဲပြီးမှသာ Form ဖြည့်ပါ</div>
       </div>
@@ -415,6 +415,7 @@ function togglePanel(id){
     if(p===id)e.classList.toggle('open');else e.classList.remove('open');
   });
   setTimeout(()=>document.getElementById(id).scrollIntoView({behavior:'smooth',block:'nearest'}),130);
+  if(id==='dep') loadPaymentInfo();
 }
 
 function copyTxt(t){
@@ -521,6 +522,7 @@ async function init(){
     user=await r.json();
     if(user.telegramId)sessionStorage.setItem('uid',user.telegramId);
     updateUI();hideLdr();
+    loadPaymentInfo();
   }catch(e){
     console.error('init:',e);
     hideLdr();
@@ -561,8 +563,53 @@ function setLd(p,on){
 // Payment method state
 let depMethod = 'kpay';
 let wdMethod  = 'kpay';
+let _payInfo = null; // cached payment info
+
+async function loadPaymentInfo() {
+  if (!user?.telegramId) return;
+  try {
+    const r = await fetch(`${API}/api/payment-info/${user.telegramId}`);
+    if (!r.ok) return;
+    _payInfo = await r.json();
+    applyPaymentInfo();
+  } catch(e) {}
+}
+
+function applyPaymentInfo() {
+  if (!_payInfo) return;
+  const { kpayNumber, kpayName, hasWave } = _payInfo;
+
+  // Update KPay display
+  const kNumEl = document.getElementById('dep-kpay-number');
+  const kNameEl = document.getElementById('dep-kpay-name');
+  if (kNumEl) kNumEl.textContent = kpayNumber;
+  if (kNameEl) kNameEl.textContent = kpayName;
+
+  // Update copy buttons
+  const kCopyNum = document.getElementById('dep-kpay-copy-num');
+  const kCopyName = document.getElementById('dep-kpay-copy-name');
+  if (kCopyNum) kCopyNum.onclick = () => copyTxt(kpayNumber);
+  if (kCopyName) kCopyName.onclick = () => copyTxt(kpayName);
+
+  // Show/hide Wave tab based on agent config
+  const waveTab = document.getElementById('dep-tab-wave');
+  const waveInfo = document.getElementById('dep-wave-info');
+  if (!hasWave) {
+    if (waveTab) waveTab.style.display = 'none';
+    if (waveInfo) waveInfo.style.display = 'none';
+    if (depMethod === 'wave') {
+      depMethod = 'kpay';
+      document.getElementById('dep-kpay-info').style.display = '';
+      const kt = document.getElementById('dep-tab-kpay');
+      if (kt) kt.className = 'pay-tab active-kpay';
+    }
+  } else {
+    if (waveTab) waveTab.style.display = '';
+  }
+}
 
 function switchDepMethod(m) {
+  if (m === 'wave' && _payInfo && !_payInfo.hasWave) return;
   depMethod = m;
   document.getElementById('dep-kpay-info').style.display = m === 'kpay' ? '' : 'none';
   document.getElementById('dep-wave-info').style.display = m === 'wave' ? '' : 'none';
