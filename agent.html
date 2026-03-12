@@ -371,23 +371,27 @@ function render(){
         <div class="hdr-role">✅ Verified Agent</div>
       </div>
       <div class="hdr-bal">
-        <div class="hdr-bal-val">${d.balance.toLocaleString()}</div>
-        <div class="hdr-bal-lbl">MMK လက်ကျန်</div>
+        <div class="hdr-bal-val" id="agBalDisplay">${d.balance.toLocaleString()}</div>
+        <div class="hdr-bal-lbl">ကျပ် လက်ကျန်</div>
       </div>
     </div>
 
     <!-- Stats -->
-    <div class="stats-row">
+    <div class="stats-row" style="grid-template-columns:1fr 1fr 1fr 1fr;">
       <div class="stat-box">
         <div class="stat-val" style="color:var(--blu);">${d.totalReferrals||0}</div>
-        <div class="stat-lbl">လက်အောက်ခံ</div>
+        <div class="stat-lbl">ဖိတ်သူ</div>
       </div>
       <div class="stat-box">
-        <div class="stat-val" style="color:var(--grn);font-size:1rem;">${(d.totalEarned||0).toLocaleString()}</div>
+        <div class="stat-val" style="color:var(--ylw);font-size:.85rem;">${(d.totalSales||0).toLocaleString()}</div>
+        <div class="stat-lbl">Sales (ကျပ်)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--grn);font-size:.9rem;">${(d.totalEarned||0).toLocaleString()}</div>
         <div class="stat-lbl">ဆုကြေး (ကျပ်)</div>
       </div>
       <div class="stat-box">
-        <div class="stat-val" style="color:var(--ylw);">${d.completedBoxes||0}/10</div>
+        <div class="stat-val" style="color:var(--pk);">${d.completedBoxes||0}/10</div>
         <div class="stat-lbl">Box ပြီး</div>
       </div>
     </div>
@@ -485,9 +489,10 @@ async function claimBox(boxNum){
     agentData = await api('/api/agent/panel');
     renderBoxes(agentData);
     // Update balance in header
-    document.querySelector('.hdr-bal-val').textContent = agentData.balance.toLocaleString();
-    document.querySelector('.stat-box:nth-child(2) .stat-val').textContent = (agentData.totalEarned||0).toLocaleString();
-    document.querySelector('.stat-box:nth-child(3) .stat-val').textContent = (agentData.completedBoxes||0)+'/10';
+    const balEl = document.getElementById('agBalDisplay') || document.querySelector('.hdr-bal-val');
+    if(balEl) balEl.textContent = agentData.balance.toLocaleString();
+    document.querySelector('.stat-box:nth-child(3) .stat-val').textContent = (agentData.totalEarned||0).toLocaleString();
+    document.querySelector('.stat-box:nth-child(4) .stat-val').textContent = (agentData.completedBoxes||0)+'/10';
   } catch(e){
     toast(e.message, false);
   }
@@ -534,11 +539,33 @@ async function loadDeposits(){
 
 async function confirmDeposit(id){
   try {
-    await api(`/api/agent/deposits/${id}/confirm`, {method:'POST', body:JSON.stringify({})});
+    const r = await fetch(`${BACKEND}/api/agent/deposits/${id}/confirm`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'x-telegram-id': myTelegramId},
+      body: JSON.stringify({})
+    });
+    const data = await r.json();
+    if(!r.ok){
+      if(data.insufficientBalance){
+        // Show friendly balance-insufficient alert
+        toast(`❌ Balance မလောက်ပါ! (ကျန်: ${(data.agentBalance||0).toLocaleString()} ကျပ် / လို: ${(data.required||0).toLocaleString()} ကျပ်)\n\nGame Developer ကို ဆက်သွယ်၍ Balance ဖြည့်ပါ`, false);
+        // Also show a persistent notice in the card
+        const card = document.getElementById('dep-'+id);
+        if(card){
+          const notice = card.querySelector('.bal-notice') || document.createElement('div');
+          notice.className = 'bal-notice';
+          notice.style.cssText = 'background:rgba(245,69,101,.15);border:1px solid rgba(245,69,101,.35);border-radius:8px;padding:9px 11px;margin-top:8px;font-size:12px;color:#fca5a5;line-height:1.5;';
+          notice.innerHTML = `⚠️ <b>လက်ကျန်ငွေ မလောက်ပါ</b><br>ကျန်: ${(data.agentBalance||0).toLocaleString()} ကျပ် &nbsp;/&nbsp; လိုသည်: ${(data.required||0).toLocaleString()} ကျပ်<br><small>Game Developer ကို ဆက်သွယ်၍ Balance ဖြည့်ပါ</small>`;
+          if(!card.querySelector('.bal-notice')) card.appendChild(notice);
+        }
+      } else {
+        toast(data.error || 'Error', false);
+      }
+      return;
+    }
     toast('✅ ငွေဖြည့်မှု အတည်ပြုပြီ!');
     const card = document.getElementById('dep-'+id);
     if(card) card.remove();
-    // refresh deposit count
     const remaining = document.querySelectorAll('[id^="dep-"]').length;
     const countEl = document.getElementById('depCount');
     if(countEl) countEl.textContent = `(${remaining})`;
@@ -546,9 +573,10 @@ async function confirmDeposit(id){
       const el = document.getElementById('depList');
       if(el) el.innerHTML = `<div style="text-align:center;padding:18px;color:var(--sub);font-size:13px;">Pending တောင်းဆိုမှု မရှိသေးပါ</div>`;
     }
-    // Refresh agent balance
+    // Refresh agent balance in header
     agentData = await api('/api/agent/panel');
-    document.querySelector('.hdr-bal-val').textContent = agentData.balance.toLocaleString();
+    const balEl = document.getElementById('agBalDisplay') || document.querySelector('.hdr-bal-val');
+    if(balEl) balEl.textContent = agentData.balance.toLocaleString();
   } catch(e){ toast(e.message, false); }
 }
 
