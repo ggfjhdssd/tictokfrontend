@@ -92,7 +92,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   font-size:1.45rem;font-weight:900;}
 
 /* Board */
-#board{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:9px;}
+#board{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:9px;}
 .cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;
   font-size:1.1rem;font-weight:900;border-radius:8px;cursor:pointer;
   background:rgba(255,255,255,.035);border:1.5px solid rgba(255,255,255,.08);
@@ -209,10 +209,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
             <span style="color:var(--sub);">ဝင်ကြေး</span><span style="font-weight:700;">500 MMK</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;">
-            <span style="color:var(--sub);">နိုင်ရင် ရမည်</span><span style="font-weight:700;color:var(--grn);">800 MMK</span>
+            <span style="color:var(--sub);">နိုင်ရင် ရမည်</span><span style="font-weight:700;color:var(--grn);">900 MMK</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13px;">
-            <span style="color:var(--sub);">သရေကျလျှင်</span><span style="font-weight:700;color:var(--blu);">250 MMK ပြန်ရ</span>
+            <span style="color:var(--sub);">သရေကျလျှင်</span><span style="font-weight:700;color:var(--blu);">450 MMK ပြန်ရ</span>
           </div>
         </div>
         <button class="btn btn-play" onclick="startSearch()">🎮 PLAY (500 MMK)</button>
@@ -273,14 +273,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
       <div id="board"></div>
 
       <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.2);margin-top:5px;">
-        ⚔️ 5 ကွက်တန်းလျှင် အနိုင်ရသည်
+        ⚔️ 4 ကွက်တန်းလျှင် အနိုင်ရသည်
       </div>
     </div>
 
   </div><!-- /card -->
 
   <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.18);margin-top:10px;">
-    ⏱ 10 စက္ကန့် • ✖ ⭕ 5 ကွက်တန်း • 🏆 800 MMK
+    ⏱ 10 စက္ကန့် • ✖ ⭕ 4 ကွက်တန်း • 🏆 900 MMK
   </div>
 </div>
 
@@ -296,7 +296,7 @@ let isMyTurn=false,turnTimer=null,searchTimer=null;
 let searchLeft=60,turnLeft=TURN_S; // ✅ CHANGED: 30 → 60
 let board=newBoard(),toastT;
 
-function newBoard(){return Array(6).fill(null).map(()=>Array(6).fill(''));}
+function newBoard(){return Array(5).fill(null).map(()=>Array(5).fill(''));}
 
 /* ── toast ── */
 function toast(msg,ok=true,dur=3200){
@@ -609,8 +609,8 @@ function stopSearchTimer(){clearInterval(searchTimer);}
 function buildBoard(){
   const el=document.getElementById('board');
   el.innerHTML='';
-  for(let r=0;r<6;r++){
-    for(let c=0;c<6;c++){
+  for(let r=0;r<5;r++){
+    for(let c=0;c<5;c++){
       const d=document.createElement('div');
       d.className='cell';d.id=`c${r}${c}`;
       d.dataset.r=r;d.dataset.c=c;
@@ -634,8 +634,8 @@ function updateBoard(row,col,sym){
 }
 
 function refreshAllCells(){
-  for(let r=0;r<6;r++){
-    for(let c=0;c<6;c++){
+  for(let r=0;r<5;r++){
+    for(let c=0;c<5;c++){
       const v=board[r][c];
       const cell=document.getElementById(`c${r}${c}`);
       if(!cell)continue;
@@ -708,10 +708,10 @@ function showResult(winner,reason){
 
   if(winner===user.telegramId){
     em.textContent='🏆';tit.textContent='အနိုင်ရပြီ!';tit.style.color='#4ade80';
-    sub.textContent='ဆုကြေး +800 MMK ရရှိပြီ!';
+    sub.textContent='ဆုကြေး +900 MMK ရရှိပြီ!';
   }else if(winner===-1){
     em.textContent='🤝';tit.textContent='သရေကျပြီ!';tit.style.color='#60a5fa';
-    sub.textContent='+250 MMK ပြန်ရပြီ';
+    sub.textContent='+450 MMK ပြန်ရပြီ';
   }else{
     em.textContent='😔';tit.textContent='ရှုံးပြီ';tit.style.color='#f87171';
     sub.textContent=reason==='timeout'?'⏱ အချိန်ကုန်သွားသည်':
