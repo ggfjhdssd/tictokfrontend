@@ -534,7 +534,7 @@ function renderShell(){
   loadLevels();
   loadHistory(1);
   loadMems();
-  loadDeposits();
+  loadDeposits(true);
   startDepRefresh();
 }
 
@@ -759,16 +759,19 @@ function setBadge(n){
 function startDepRefresh(){
   stopDepRefresh();
   _depRefreshTimer = setInterval(()=>{
-    if(G.tab==='deposits') loadDeposits();
+    if(G.tab==='deposits') loadDeposits(false);
   }, 20000);
 }
 function stopDepRefresh(){ clearInterval(_depRefreshTimer); }
 
-async function loadDeposits(){
+let _depLoading = false;
+async function loadDeposits(showSpinner=false){
+  if(_depLoading) return;
+  _depLoading = true;
   const el=document.getElementById('depList');
-  if(!el) return;
-  // Only show spinner if currently empty
-  if(el.innerHTML.includes('Loading...') || el.innerHTML.includes('empty')) {
+  if(!el){ _depLoading=false; return; }
+  // Only show spinner on first load or explicit refresh
+  if(showSpinner || el.innerHTML.trim()===''){
     el.innerHTML=`<div class="empty"><div class="ei">⏳</div><div class="et">Loading...</div></div>`;
   }
   try{
@@ -776,13 +779,16 @@ async function loadDeposits(){
     setBadge(deps.length);
     if(!deps.length){
       el.innerHTML=`<div class="empty"><div class="ei">✅</div><div class="et">Pending Deposit မရှိသေးပါ</div></div>`;
-      document.getElementById('depBanner').style.display='none';
-      return;
+      const banner=document.getElementById('depBanner');
+      if(banner) banner.style.display='none';
+    } else {
+      el.innerHTML=deps.map(d=>depCardHtml(d)).join('');
     }
-    el.innerHTML=deps.map(d=>depCardHtml(d)).join('');
   }catch(e){
+    console.error('loadDeposits err:', e);
     el.innerHTML=`<div class="empty"><div class="ei">❌</div><div class="et">${esc(e.message)}</div></div>`;
   }
+  _depLoading = false;
 }
 
 function depCardHtml(d){
