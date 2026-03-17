@@ -978,52 +978,26 @@ async function deleteCode(id,code){
 }
 
 /* ── Make Agent toggle ── */
-function toggleAgent(tid, makeAgent){
-  if(!makeAgent){
-    if(!confirm(`Agent ${tid} မှ Role ဖြုတ်မည်?`))return;
-    api('/api/admin/users/'+tid+'/make-agent',{method:'POST',body:JSON.stringify({isAgent:false})})
-      .then(()=>{toast('ℹ️ Agent Role ဖြုတ်ပြီ',true);loadUsers(usrPage);document.getElementById('userDet').style.display='none';})
-      .catch(e=>toast('Error: '+e.message,false));
-    return;
-  }
-  // Show KPay/Wave form modal
-  const modal = document.getElementById('agentModal');
-  document.getElementById('agentModalTid').value = tid;
-  document.getElementById('agModalKpayNum').value='';
-  document.getElementById('agModalKpayName').value='';
-  document.getElementById('agModalHasWave').checked=false;
-  document.getElementById('agModalWaveSection').style.display='none';
-  document.getElementById('agModalWaveNum').value='';
-  document.getElementById('agModalWaveName').value='';
-  modal.style.display='flex';
-}
-
-async function submitMakeAgent(){
-  const tid = parseInt(document.getElementById('agentModalTid').value);
-  const kpayNumber = document.getElementById('agModalKpayNum').value.trim();
-  const kpayName = document.getElementById('agModalKpayName').value.trim();
-  const hasWave = document.getElementById('agModalHasWave').checked;
-  const waveNumber = (document.getElementById('agModalWaveNum')?.value||'').trim();
-  const waveName = (document.getElementById('agModalWaveName')?.value||'').trim();
-  if(!kpayNumber){toast('KPay နံပါတ် ဖြည့်ပါ',false);return;}
-  if(!kpayName){toast('KPay အမည် ဖြည့်ပါ',false);return;}
-  if(hasWave && !waveNumber){toast('Wave Pay နံပါတ် ဖြည့်ပါ',false);return;}
-  document.getElementById('agModalTx').style.display='none';
-  document.getElementById('agModalSp').style.display='inline-block';
+async function toggleAgent(tid, makeAgent){
+  if(!confirm(makeAgent?`User ${tid} ကို Agent အဖြစ် ခွင့်ပြုမည်?`:`Agent ${tid} မှ Role ဖြုတ်မည်?`))return;
   try{
-    await api('/api/admin/users/'+tid+'/make-agent',{method:'POST',body:JSON.stringify({isAgent:true,kpayNumber,kpayName,hasWave,waveNumber,waveName})});
-    toast('🎯 Agent ခွင့်ပြုပြီ — Payment Info သိမ်းပြီ',true);
-    document.getElementById('agentModal').style.display='none';
+    await api('/api/admin/users/'+tid+'/make-agent',{method:'POST',body:JSON.stringify({isAgent:makeAgent})});
+    toast(makeAgent?'🎯 Agent ခွင့်ပြုပြီ':'ℹ️ Agent Role ဖြုတ်ပြီ', true);
     loadUsers(usrPage);
     document.getElementById('userDet').style.display='none';
   }catch(e){toast('Error: '+e.message,false);}
-  document.getElementById('agModalTx').style.display='inline';
-  document.getElementById('agModalSp').style.display='none';
 }
 
 /* ── Agents Tab ── */
 let agentPage=1, agentDeb;
 function debounceAgent(){clearTimeout(agentDeb);agentDeb=setTimeout(()=>loadAgents(1),400);}
+
+const BOX_CFG=[
+  {box:1,people:5,bonus:500},{box:2,people:10,bonus:2000},{box:3,people:30,bonus:10000},
+  {box:4,people:50,bonus:30000},{box:5,people:70,bonus:80000},{box:6,people:100,bonus:300000},
+  {box:7,people:150,bonus:800000},{box:8,people:200,bonus:2000000},{box:9,people:70,bonus:1000000},
+  {box:10,people:10,bonus:2000,loop:true}
+];
 
 async function loadAgents(page=1){
   agentPage=page;
@@ -1041,12 +1015,11 @@ async function loadAgents(page=1){
               ${u.isBanned?'<span class="bdg bg-red" style="margin-left:5px;">Banned</span>':''}
             </div>
             <div style="font-size:11px;color:var(--sub);margin-top:2px;">@${esc(u.username||'-')} • ID: ${u.telegramId}</div>
-            <div style="font-size:11px;color:var(--blu);margin-top:2px;">👥 ${u.totalReferrals||0} referrals</div>
-            <div style="font-size:11px;color:var(--ylw);margin-top:2px;">📱 ${esc(u.agentData?.agentKpayNumber||'-')}</div>
+            <div style="font-size:11px;color:var(--blu);margin-top:2px;">👥 ${u.totalReferrals||0} referrals • 🏆 ${(u.agentData?.completedBoxes||0)}/10 boxes</div>
           </div>
           <div style="text-align:right;">
             <div style="font-weight:900;color:var(--grn);font-size:14px;">${(u.balance||0).toLocaleString()} ကျပ်</div>
-            <div style="font-size:10px;color:var(--sub);">Comm: ${(u.totalCommission||0).toLocaleString()} ကျပ်</div>
+            <div style="font-size:10px;color:var(--ylw);">💰 Earned: ${(u.agentData?.totalEarned||0).toLocaleString()} ကျပ်</div>
           </div>
         </div>
       </div>`).join('');
@@ -1062,11 +1035,28 @@ async function loadAgents(page=1){
 async function showAgentDet(u){
   const det=document.getElementById('agentDet');
   det.style.display='block';
-  const kpayNum = u.agentData?.agentKpayNumber||'';
-  const kpayName = u.agentData?.agentKpayName||'';
-  const hasWave = u.agentData?.hasWave||false;
-  const waveNum = u.agentData?.agentWaveNumber||'';
-  const waveName = u.agentData?.agentWaveName||'';
+  const ms = u.agentData?.milestones||{};
+  const boxHtml = BOX_CFG.map(cfg=>{
+    const m = ms[cfg.box]||{current:0,claimed:false};
+    const pct = Math.min(100,Math.round((m.current/cfg.people)*100));
+    const done = m.claimed && !cfg.loop;
+    return `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px;margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+        <span style="font-weight:700;font-size:12px;">${cfg.loop?'♾️ ':''}Box ${cfg.box} ${done?'<span style="color:var(--grn)">✅</span>':''}</span>
+        <span style="font-size:11px;color:var(--ylw);">${(cfg.bonus).toLocaleString()} ကျပ် bonus</span>
+      </div>
+      <div style="background:rgba(255,255,255,.07);border-radius:99px;height:5px;overflow:hidden;margin-bottom:4px;">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#5c35f5,#00cc88);border-radius:99px;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--sub);">
+        <span>${m.current}/${cfg.people} ယောက်</span>
+        <div style="display:flex;gap:4px;">
+          <button class="btn btn-ylw" style="padding:3px 8px;font-size:10px;" onclick="adminAwardBox(${u.telegramId},${cfg.box})">🎁 Award</button>
+          <button class="btn btn-gh" style="padding:3px 8px;font-size:10px;" onclick="adminResetBox(${u.telegramId},${cfg.box})">🔄 Reset</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 
   det.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
@@ -1074,14 +1064,13 @@ async function showAgentDet(u){
       <button class="btn btn-gh btn-sm" onclick="document.getElementById('agentDet').style.display='none'">✕</button>
     </div>
     <div class="det-grid">
-      <div class="det-item"><div class="rlbl">နာမည်</div><div style="font-weight:700;">${esc(u.firstName||u.username||'-')}</div></div>
+      <div class="det-item"><div class="rlbl">နာမည်</div><div style="font-weight:700;">${esc(u.firstName||'-')}</div></div>
       <div class="det-item"><div class="rlbl">Telegram ID</div><div style="font-family:monospace;color:#93c5fd;">${u.telegramId}</div></div>
       <div class="det-item"><div class="rlbl">လက်ကျန်</div><div style="font-weight:900;color:var(--grn);">${(u.balance||0).toLocaleString()} ကျပ်</div></div>
       <div class="det-item"><div class="rlbl">Referrals</div><div style="color:var(--blu);">${u.totalReferrals||0} ယောက်</div></div>
-      <div class="det-item"><div class="rlbl">KPay</div><div style="font-family:monospace;color:#f5b800;">${esc(kpayNum||'-')}</div></div>
-      <div class="det-item"><div class="rlbl">Wave</div><div>${hasWave?'✅ '+esc(waveNum):'❌ မရှိ'}</div></div>
+      <div class="det-item"><div class="rlbl">Total Earned</div><div style="color:var(--ylw);">${(u.agentData?.totalEarned||0).toLocaleString()} ကျပ်</div></div>
+      <div class="det-item"><div class="rlbl">Boxes ပြီး</div><div>${u.agentData?.completedBoxes||0}/10</div></div>
     </div>
-
     <div style="background:rgba(0,204,136,.06);border:1px solid rgba(0,204,136,.2);border-radius:12px;padding:12px;margin-bottom:12px;">
       <div class="rlbl" style="margin-bottom:7px;">💰 Agent Balance ဖြည့်ပေးမည်</div>
       <div style="display:flex;gap:6px;margin-bottom:6px;">
@@ -1089,41 +1078,40 @@ async function showAgentDet(u){
         <input class="inp" id="agBalR" placeholder="မှတ်ချက်" style="flex:1;">
         <button class="btn btn-grn" style="padding:10px;white-space:nowrap;" onclick="adjAgentBal(${u.telegramId})">💾 OK</button>
       </div>
-      <div style="font-size:11px;color:var(--sub);">+ ထည့်ရင် Balance ပေါင်း၊ - ထည့်ရင် Balance နုတ်</div>
+      <div style="font-size:11px;color:var(--sub);">⚠️ + ထည့်ရင် Balance ပေါင်း၊ - ထည့်ရင် Balance နုတ်</div>
     </div>
-
     <div style="background:rgba(245,184,0,.06);border:1px solid rgba(245,184,0,.2);border-radius:12px;padding:12px;margin-bottom:12px;">
-      <div class="rlbl" style="margin-bottom:7px;">📱 Agent Payment Info ပြင်မည်</div>
+      <div class="rlbl" style="margin-bottom:7px;">📱 Agent KPay နံပါတ် သတ်မှတ်မည် (Deposit Page)</div>
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <input class="inp" id="agKpayNum" type="tel" placeholder="KPay နံပါတ် 09xxxxxxxxx" value="${esc(kpayNum)}">
-        <input class="inp" id="agKpayName" placeholder="KPay အမည်" value="${esc(kpayName)}">
+        <input class="inp" id="agKpayNum" type="tel" placeholder="09xxxxxxxxx" value="${esc(u.agentData?.agentKpayNumber||'')}">
+        <input class="inp" id="agKpayName" placeholder="အကောင့်ပိုင်ရှင် နာမည်" value="${esc(u.agentData?.agentKpayName||'')}">
         <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);cursor:pointer;">
-          <input type="checkbox" id="agHasWave" ${hasWave?'checked':''} onchange="toggleWaveEdit()" style="width:16px;height:16px;">
+          <input type="checkbox" id="agHasWave" ${u.agentData?.hasWave?'checked':''} style="width:16px;height:16px;">
           Wave Pay ပါ ထည့်ပေးမည်
         </label>
-        <div id="agWaveSection" style="display:${hasWave?'flex':'none'};flex-direction:column;gap:6px;">
-          <input class="inp" id="agWaveNum" type="tel" placeholder="Wave Pay နံပါတ် 09xxxxxxxxx" value="${esc(waveNum)}">
-          <input class="inp" id="agWaveName" placeholder="Wave Pay အမည်" value="${esc(waveName)}">
-        </div>
         <button class="btn btn-ylw" onclick="saveAgentKpay(${u.telegramId})">
-          <span id="agKpayTx">💾 Payment Info သိမ်းမည်</span><div class="spn" id="agKpaySp" style="display:none;"></div>
+          <span id="agKpayTx">💾 KPay Info သိမ်းမည်</span><div class="spn" id="agKpaySp" style="display:none;"></div>
         </button>
       </div>
-      <div style="font-size:11px;color:var(--sub);margin-top:5px;">ဤ Agent ၏ Link မှ ဝင်လာသော User များ ဤ Payment Info ကိုသာ မြင်ရမည်</div>
+      <div style="font-size:11px;color:var(--sub);margin-top:5px;">ဤ Agent ၏ Link မှ ဝင်လာသော User များ ဤ KPay ကိုသာ မြင်ရမည်</div>
     </div>
-
+    <div style="font-weight:800;font-size:.85rem;margin:12px 0 8px;">📦 Milestone Boxes</div>
+    ${boxHtml}
     <button class="btn btn-red btn-full" style="margin-top:8px;" onclick="toggleAgent(${u.telegramId},false)">
       🎯 Agent Role ဖြုတ်မည်
     </button>`;
   det.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
-function toggleWaveEdit(){
-  const show = document.getElementById('agHasWave').checked;
-  document.getElementById('agWaveSection').style.display = show ? 'flex' : 'none';
+async function adminAwardBox(tid,box){
+  if(!confirm(`Box ${box} ဆုကြေး Agent ${tid} ကို ပေးမည်?`))return;
+  try{
+    const d=await api('/api/admin/agents/'+tid+'/award-box',{method:'POST',body:JSON.stringify({box})});
+    toast(`🎁 Box ${box} Award ပြီ (+${(d.bonus||0).toLocaleString()} ကျပ်)`,true);
+    loadAgents(agentPage);
+    document.getElementById('agentDet').style.display='none';
+  }catch(e){toast('Error: '+e.message,false);}
 }
-
-
 
 async function adjAgentBal(tid){
   const a=parseInt(document.getElementById('agBalA').value);
@@ -1142,15 +1130,13 @@ async function saveAgentKpay(tid){
   const kpayNumber=document.getElementById('agKpayNum').value.trim();
   const kpayName=document.getElementById('agKpayName').value.trim();
   const hasWave=document.getElementById('agHasWave').checked;
-  const waveNumber=(document.getElementById('agWaveNum')?.value||'').trim();
-  const waveName=(document.getElementById('agWaveName')?.value||'').trim();
-  if(!kpayNumber)return toast('KPay နံပါတ် ဖြည့်ပါ',false);
-  if(!kpayName)return toast('KPay အမည် ဖြည့်ပါ',false);
+  if(!kpayNumber)return toast('KPay နံပါတ် ထည့်ပါ',false);
   document.getElementById('agKpayTx').style.display='none';
   document.getElementById('agKpaySp').style.display='inline-block';
   try{
-    await api('/api/admin/agents/'+tid+'/payment-info',{method:'POST',body:JSON.stringify({kpayNumber,kpayName,hasWave,waveNumber,waveName})});
-    toast('✅ Payment Info သိမ်းပြီ!',true);
+    await api(`/api/admin/agents/${tid}/payment-info`,{method:'POST',body:JSON.stringify({kpayNumber,kpayName,hasWave})});
+    toast('✅ KPay Info သိမ်းပြီ',true);
+    document.getElementById('agentDet').style.display='none';
     loadAgents(agentPage);
   }catch(e){toast('Error: '+e.message,false);}
   document.getElementById('agKpayTx').style.display='inline';
@@ -1237,37 +1223,5 @@ function parseErr(e){
 
 window.addEventListener('DOMContentLoaded',tryAutoAuth);
 </script>
-
-<!-- Agent Make Modal -->
-<div id="agentModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9000;align-items:center;justify-content:center;padding:16px;">
-  <div style="background:#111118;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:20px;width:100%;max-width:380px;max-height:85vh;overflow-y:auto;">
-    <input type="hidden" id="agentModalTid">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <div style="font-weight:900;font-size:1rem;">🎯 Agent ခွင့်ပြုမည်</div>
-      <button onclick="document.getElementById('agentModal').style.display='none'" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 10px;color:#fff;cursor:pointer;font-family:'Outfit',sans-serif;">✕</button>
-    </div>
-    <div style="background:rgba(245,184,0,.07);border:1px solid rgba(245,184,0,.2);border-radius:10px;padding:10px;margin-bottom:14px;font-size:12px;color:#fde68a;line-height:1.6;">
-      ⚠️ Agent ဖြစ်ပြီဆိုတာနဲ့ သူ့ Link မှ ဝင်လာသော User များ ၏ Deposit သည် Admin မဟုတ်ဘဲ <b>ဤ Agent ဆီသာ</b> ရောက်သည်။ Agent ၏ Balance မှ ဝယ်ယူ&nbsp;ရမည်။
-    </div>
-    <div style="display:flex;flex-direction:column;gap:9px;">
-      <div style="font-size:11px;color:rgba(255,255,255,.45);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">📱 KPay Info</div>
-      <input class="inp" id="agModalKpayNum" type="tel" placeholder="KPay ဖုန်းနံပါတ် (09xxxxxxxxx)" autocomplete="off">
-      <input class="inp" id="agModalKpayName" placeholder="KPay အကောင့်ပိုင်ရှင် နာမည်" autocomplete="off">
-      <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;color:rgba(255,255,255,.55);">
-        <input type="checkbox" id="agModalHasWave" onchange="document.getElementById('agModalWaveSection').style.display=this.checked?'flex':'none'" style="width:16px;height:16px;cursor:pointer;">
-        Wave Pay ပါ ထည့်မည်
-      </label>
-      <div id="agModalWaveSection" style="display:none;flex-direction:column;gap:9px;">
-        <div style="font-size:11px;color:rgba(255,255,255,.45);font-weight:700;text-transform:uppercase;letter-spacing:.06em;">🌊 Wave Pay Info</div>
-        <input class="inp" id="agModalWaveNum" type="tel" placeholder="Wave Pay ဖုန်းနံပါတ် (09xxxxxxxxx)" autocomplete="off">
-        <input class="inp" id="agModalWaveName" placeholder="Wave Pay အကောင့်ပိုင်ရှင် နာမည်" autocomplete="off">
-      </div>
-      <button class="btn btn-pur btn-full" style="margin-top:4px;" onclick="submitMakeAgent()">
-        <span id="agModalTx">✅ Agent ခွင့်ပြုမည်</span>
-        <div class="spn" id="agModalSp" style="display:none;"></div>
-      </button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
