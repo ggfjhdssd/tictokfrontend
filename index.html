@@ -374,7 +374,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
       <div class="ritem" style="border-color:rgba(61,158,255,.16);background:rgba(61,158,255,.03);">
         <div class="rico">🤝</div>
         <div class="rlbl">သရေကျလျှင်</div>
-        <div class="rval" style="color:var(--blu);">250 MMK ပြန်ရ</div>
+        <div class="rval" style="color:var(--blu);">400 MMK ပြန်ရ</div>
       </div>
       <div class="ritem" style="border-color:rgba(245,184,0,.16);background:rgba(245,184,0,.03);">
         <div class="rico">⏱️</div>
@@ -577,7 +577,7 @@ async function loadPaymentInfo() {
 
 function applyPaymentInfo() {
   if (!_payInfo) return;
-  const { kpayNumber, kpayName, hasWave } = _payInfo;
+  const { kpayNumber, kpayName, hasWave, waveNumber, waveName } = _payInfo;
 
   // Update KPay display
   const kNumEl = document.getElementById('dep-kpay-number');
@@ -590,6 +590,17 @@ function applyPaymentInfo() {
   const kCopyName = document.getElementById('dep-kpay-copy-name');
   if (kCopyNum) kCopyNum.onclick = () => copyTxt(kpayNumber);
   if (kCopyName) kCopyName.onclick = () => copyTxt(kpayName);
+
+  // Update Wave Pay display if available
+  if (hasWave && waveNumber) {
+    const waveNumEls = document.querySelectorAll('.wave-num');
+    if (waveNumEls[0]) waveNumEls[0].textContent = waveNumber;
+    const waveNameEls = document.querySelectorAll('#dep-wave-info .krow:nth-child(2) [style*="font-weight:700"]');
+    // Update wave copy buttons
+    const waveCopyBtns = document.querySelectorAll('#dep-wave-info .cpybtn');
+    if (waveCopyBtns[0]) waveCopyBtns[0].onclick = () => copyTxt(waveNumber);
+    if (waveCopyBtns[1]) waveCopyBtns[1].onclick = () => copyTxt(waveName || waveNumber);
+  }
 
   // Show/hide Wave tab based on agent config
   const waveTab = document.getElementById('dep-tab-wave');

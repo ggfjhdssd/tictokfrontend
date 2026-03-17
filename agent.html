@@ -76,7 +76,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
 .page.active{display:block;}
 
 /* ── Bottom Nav ── */
-.bnav{flex-shrink:0;display:grid;grid-template-columns:repeat(4,1fr);
+.bnav{flex-shrink:0;display:grid;grid-template-columns:repeat(6,1fr);
   height:var(--nav-h);padding-bottom:var(--safe-b);
   background:var(--sur);border-top:1px solid var(--bdr);}
 .bn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
@@ -243,6 +243,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
 .mem-mt{font-size:11px;color:var(--sub);margin-top:1px;}
 .mem-bl{font-weight:800;font-size:13px;color:var(--grn);flex-shrink:0;}
 
+/* Input */
+.inp{width:100%;padding:11px 13px;background:rgba(0,0,0,.25);border:1px solid var(--bdr2);
+  border-radius:10px;color:var(--tx);font-family:'Outfit',sans-serif;font-size:13px;outline:none;transition:.2s;}
+.inp:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(92,53,245,.15);}
+.inp::placeholder{color:rgba(255,255,255,.18);}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:99px;}
@@ -364,6 +370,61 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
       </div>
     </div>
 
+    <!-- TOP-UP USER -->
+    <div class="page" id="pg-topup">
+      <div class="sec"><div class="sec-t">💸 User Balance ဖြည့်ပေးရန်</div></div>
+
+      <!-- Agent Payment Info (Read-Only, set by Admin) -->
+      <div class="card" id="agentPayInfoCard" style="margin-bottom:10px;">
+        <div class="sec-t" style="margin-bottom:10px;">📱 သင့် Payment နံပါတ် (Admin သတ်မှတ်ထားသည်)</div>
+        <div style="background:rgba(92,53,245,.08);border:1px solid rgba(92,53,245,.2);border-radius:10px;padding:11px;margin-bottom:8px;" id="agentKpayInfo">
+          <div style="font-size:10px;color:var(--sub);margin-bottom:4px;">📱 KPay နံပါတ်</div>
+          <div style="font-weight:800;font-size:1rem;color:#a78bfa;" id="agKpayNum">—</div>
+          <div style="font-size:12px;color:var(--sub);margin-top:2px;" id="agKpayName">—</div>
+        </div>
+        <div style="background:rgba(0,196,168,.08);border:1px solid rgba(0,196,168,.2);border-radius:10px;padding:11px;" id="agentWaveInfo">
+          <div style="font-size:10px;color:var(--sub);margin-bottom:4px;">🌊 Wave Pay နံပါတ်</div>
+          <div style="font-weight:800;font-size:1rem;color:#00e5cc;" id="agWaveNum">—</div>
+          <div style="font-size:12px;color:var(--sub);margin-top:2px;" id="agWaveName">—</div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:rgba(255,255,255,.3);text-align:center;">ဤ နံပါတ်ကို Admin သာ ပြင်ဆင်နိုင်သည်</div>
+      </div>
+
+      <!-- Top-up Form -->
+      <div class="card">
+        <div class="sec-t" style="margin-bottom:12px;">User ထံ Balance လွှဲပေးရန်</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <input class="inp" id="tuUserId" type="number" placeholder="User Telegram ID">
+          <input class="inp" id="tuAmount" type="number" placeholder="ပမာဏ (ကျပ်) — အနည်းဆုံး 100">
+          <button class="btn btn-grn btn-f" id="tuBtn" onclick="submitTopup(this)">
+            <span class="btx">💸 လွှဲပေးမည်</span><span class="bsp"></span>
+          </button>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:rgba(255,255,255,.3);line-height:1.7;">
+          ⚠️ သင့် Balance မှ ဖြည့်ပေးသည် • မြောက်ဖြည့်မိပါက Admin ကို ဆက်သွယ်ပါ
+        </div>
+      </div>
+    </div>
+
+    <!-- COMMISSION STATS -->
+    <div class="page" id="pg-commission">
+      <div class="sec">
+        <div class="sec-t">📊 3-Level Commission Stats</div>
+        <button class="btn btn-gh btn-sm" onclick="loadCommission(true)">🔄</button>
+      </div>
+      <div style="background:rgba(92,53,245,.07);border:1px solid rgba(92,53,245,.2);border-radius:12px;padding:12px;margin-bottom:12px;font-size:12px;color:rgba(255,255,255,.55);line-height:1.8;">
+        ပွဲတစ်ပွဲပြီးတိုင်း:<br>
+        🟣 Level 1 → <b style="color:#a78bfa;">50 ကျပ်</b> &nbsp;|&nbsp;
+        🔵 Level 2 → <b style="color:#93c5fd;">20 ကျပ်</b> &nbsp;|&nbsp;
+        🟢 Level 3 → <b style="color:#6ee7b7;">10 ကျပ်</b>
+      </div>
+      <div id="commissionStats">
+        <div class="empty"><div class="ei">📊</div><div class="et">Loading...</div></div>
+      </div>
+    </div>
+
+
+
   </div><!-- /pages -->
 
   <!-- Bottom Nav -->
@@ -374,6 +435,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
     <button class="bn" id="bn-deposits" onclick="go('deposits')">
       <div class="bn-ic">💰</div><div class="bn-lb">Deposits</div><div class="bn-dot"></div>
       <div class="bn-badge" id="depBdg"></div>
+    </button>
+    <button class="bn" id="bn-topup" onclick="go('topup')">
+      <div class="bn-ic">💸</div><div class="bn-lb">Top-up</div><div class="bn-dot"></div>
+    </button>
+    <button class="bn" id="bn-commission" onclick="go('commission')">
+      <div class="bn-ic">📊</div><div class="bn-lb">Commission</div><div class="bn-dot"></div>
     </button>
     <button class="bn" id="bn-boxes" onclick="go('boxes')">
       <div class="bn-ic">🏆</div><div class="bn-lb">Boxes</div><div class="bn-dot"></div>
@@ -519,6 +586,7 @@ function renderShell(){
   G.link=`https://t.me/${G.data.botUsername||'tictoe1_bot'}?start=${G.data.referralCode}`;
   document.getElementById('refTxt').textContent=G.link;
   renderBoxes();
+  loadAgentPaymentInfo();
 }
 
 function updateStats(){
@@ -540,9 +608,105 @@ function go(name){
   document.querySelectorAll('.bn').forEach(b=>b.classList.remove('on'));
   document.getElementById('pg-'+name).classList.add('active');
   document.getElementById('bn-'+name).classList.add('on');
+  if(name==='commission') loadCommission();
 }
 
-/* ══ REFERRAL ══ */
+/* ══ AGENT PAYMENT INFO (read-only, set by Admin) ══ */
+async function loadAgentPaymentInfo(){
+  try{
+    const d=await api('/api/agent/payment-info');
+    document.getElementById('agKpayNum').textContent=d.kpayNumber||'—';
+    document.getElementById('agKpayName').textContent=d.kpayName||'—';
+    const waveCard=document.getElementById('agentWaveInfo');
+    if(d.hasWave&&d.waveNumber){
+      document.getElementById('agWaveNum').textContent=d.waveNumber;
+      document.getElementById('agWaveName').textContent=d.waveName||'—';
+      if(waveCard) waveCard.style.display='block';
+    } else {
+      if(waveCard) waveCard.style.display='none';
+    }
+  }catch(e){}
+}
+
+/* ══ TOP-UP USER ══ */
+async function submitTopup(btn){
+  const userId=document.getElementById('tuUserId').value.trim();
+  const amount=parseInt(document.getElementById('tuAmount').value);
+  if(!userId) return toast('User Telegram ID ဖြည့်ပါ','err');
+  if(!amount||amount<100) return toast('အနည်းဆုံး 100 ကျပ် ဖြည့်ပါ','err');
+  busy(btn,true);
+  try{
+    const r=await api('/api/agent/topup-user',{
+      method:'POST',body:JSON.stringify({userId:parseInt(userId),amount})
+    });
+    toast(`✅ ${r.transferredAmount.toLocaleString()} ကျပ် လွှဲပြီ!\nသင့်ကျန်: ${r.agentNewBalance.toLocaleString()} ကျပ်`,'ok');
+    document.getElementById('tuUserId').value='';
+    document.getElementById('tuAmount').value='';
+    G.data=await api('/api/agent/panel');
+    updateStats();
+  }catch(e){toast(myerr(e.message),'err');}
+  busy(btn,false);
+}
+
+/* ══ COMMISSION STATS ══ */
+async function loadCommission(showMsg=false){
+  const el=document.getElementById('commissionStats');
+  if(!el)return;
+  el.innerHTML=`<div class="empty"><div class="ei">📊</div><div class="et">Loading...</div></div>`;
+  try{
+    const d=await api('/api/agent/commission-stats');
+    el.innerHTML=`
+      <div class="card" style="margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:1.3rem;">🟣</span>
+          <div><div style="font-weight:800;font-size:.95rem;">Level 1 — ကိုယ်တိုင် ဖိတ်ထားသူများ</div>
+          <div style="font-size:11px;color:var(--sub);">ဖိတ်သူ ${d.l1.count} ဦး • ပွဲ ${d.l1.totalGames} ပွဲ</div></div>
+          <div style="margin-left:auto;text-align:right;">
+            <div style="font-weight:900;color:#a78bfa;font-size:1rem;">${d.l1.estimated.toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--sub);">ကျပ် ခန့်မှန်း</div>
+          </div>
+        </div>
+        <div style="background:rgba(167,139,250,.1);border-radius:8px;padding:8px 10px;font-size:12px;color:rgba(167,139,250,.8);">ပွဲတစ်ပွဲ = <b>50 ကျပ်</b></div>
+      </div>
+      <div class="card" style="margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:1.3rem;">🔵</span>
+          <div><div style="font-weight:800;font-size:.95rem;">Level 2 — L1 ၏ ဖိတ်ထားသူများ</div>
+          <div style="font-size:11px;color:var(--sub);">ဖိတ်သူ ${d.l2.count} ဦး • ပွဲ ${d.l2.totalGames} ပွဲ</div></div>
+          <div style="margin-left:auto;text-align:right;">
+            <div style="font-weight:900;color:#93c5fd;font-size:1rem;">${d.l2.estimated.toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--sub);">ကျပ် ခန့်မှန်း</div>
+          </div>
+        </div>
+        <div style="background:rgba(147,197,253,.1);border-radius:8px;padding:8px 10px;font-size:12px;color:rgba(147,197,253,.8);">ပွဲတစ်ပွဲ = <b>20 ကျပ်</b></div>
+      </div>
+      <div class="card" style="margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-size:1.3rem;">🟢</span>
+          <div><div style="font-weight:800;font-size:.95rem;">Level 3 — L2 ၏ ဖိတ်ထားသူများ</div>
+          <div style="font-size:11px;color:var(--sub);">ဖိတ်သူ ${d.l3.count} ဦး • ပွဲ ${d.l3.totalGames} ပွဲ</div></div>
+          <div style="margin-left:auto;text-align:right;">
+            <div style="font-weight:900;color:#6ee7b7;font-size:1rem;">${d.l3.estimated.toLocaleString()}</div>
+            <div style="font-size:10px;color:var(--sub);">ကျပ် ခန့်မှန်း</div>
+          </div>
+        </div>
+        <div style="background:rgba(110,231,183,.1);border-radius:8px;padding:8px 10px;font-size:12px;color:rgba(110,231,183,.8);">ပွဲတစ်ပွဲ = <b>10 ကျပ်</b></div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,rgba(92,53,245,.1),rgba(0,204,136,.07));border-color:rgba(92,53,245,.25);">
+        <div style="text-align:center;">
+          <div style="font-size:11px;color:var(--sub);margin-bottom:4px;">စုစုပေါင်း ခန့်မှန်း</div>
+          <div style="font-size:1.6rem;font-weight:900;background:linear-gradient(135deg,#a78bfa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+            ${(d.l1.estimated+d.l2.estimated+d.l3.estimated).toLocaleString()} ကျပ်
+          </div>
+        </div>
+      </div>`;
+    if(showMsg) toast('📊 Refresh ပြီးပါပြီ','ok');
+  }catch(e){
+    el.innerHTML=`<div class="empty"><div class="ei">❌</div><div class="et">${esc(myerr(e.message))}</div></div>`;
+  }
+}
+
+
 function copyLink(){
   navigator.clipboard.writeText(G.link)
     .then(()=>toast('📋 Copy ပြီးပါပြီ!','ok'))

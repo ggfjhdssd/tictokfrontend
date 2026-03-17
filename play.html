@@ -147,7 +147,47 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   font-weight:600;color:var(--tx);transition:background .12s;white-space:nowrap;}
 .emote-item:hover,.emote-item:active{background:rgba(255,255,255,.1);}
 
-/* Speech bubble */
+/* ── Fake Disconnect Overlay ── */
+#fakeDiscOv{
+  position:fixed;inset:0;z-index:5000;
+  background:rgba(0,0,0,.78);
+  backdrop-filter:blur(6px);
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:18px;
+  animation:fdIn .35s ease;
+}
+#fakeDiscOv.show{display:flex;}
+@keyframes fdIn{from{opacity:0}to{opacity:1}}
+.fd-spinner{
+  width:64px;height:64px;
+  border:5px solid rgba(255,255,255,.1);
+  border-top-color:#5c35f5;
+  border-radius:50%;
+  animation:spin .9s linear infinite;
+}
+.fd-title{
+  font-size:1.1rem;font-weight:800;color:#eaeaf2;
+  text-align:center;line-height:1.6;max-width:260px;
+}
+.fd-sub{
+  font-size:12px;color:rgba(255,255,255,.4);
+  text-align:center;
+}
+.fd-alert{
+  background:rgba(239,68,68,.12);
+  border:1px solid rgba(239,68,68,.3);
+  border-radius:14px;
+  padding:14px 20px;
+  text-align:center;
+  max-width:280px;
+  display:none;
+}
+.fd-alert-title{font-size:1rem;font-weight:800;color:#f87171;margin-bottom:6px;}
+.fd-alert-sub{font-size:13px;color:rgba(248,113,113,.75);line-height:1.6;}
+
 #emoteBubble{position:fixed;bottom:120px;left:50%;transform:translateX(-50%) scale(0);
   background:linear-gradient(135deg,rgba(92,53,245,.92),rgba(147,51,234,.92));
   border:1px solid rgba(255,255,255,.2);border-radius:22px;padding:10px 20px;
@@ -164,7 +204,18 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 <div id="ldr"><div class="ldr-t">🎮 TicToeTic</div><div class="ring"></div></div>
 <div id="toast"><div class="ti" id="ti"></div></div>
 
-<!-- Result Overlay -->
+<!-- Fake Disconnect Overlay -->
+<div id="fakeDiscOv">
+  <div class="fd-spinner"></div>
+  <div class="fd-title" id="fdTitle">အင်တာနက်လိုင်းကျ၍ ပြန်လည်ချိတ်ဆက်နေပါသည်....</div>
+  <div class="fd-sub">ကျေးဇူးပြု၍ စောင့်ဆိုင်းပါ...</div>
+  <div class="fd-alert" id="fdAlert">
+    <div class="fd-alert-title">😔 ချိတ်ဆက်မှု မအောင်မြင်ပါ</div>
+    <div class="fd-alert-sub">အင်တာနက်လိုင်းမကောင်းသဖြင့် သင့်ကို ရှုံးနိမ့်ကြောင်း သတ်မှတ်လိုက်ရသည်</div>
+  </div>
+</div>
+
+
 <div id="resOv">
   <div class="res-card">
     <div class="res-em" id="rEm">🏆</div>
@@ -209,10 +260,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
             <span style="color:var(--sub);">ဝင်ကြေး</span><span style="font-weight:700;">500 MMK</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;">
-            <span style="color:var(--sub);">နိုင်ရင် ရမည်</span><span style="font-weight:700;color:var(--grn);">900 MMK</span>
+            <span style="color:var(--sub);">နိုင်ရင် ရမည်</span><span style="font-weight:700;color:var(--grn);">800 MMK</span>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:13px;">
-            <span style="color:var(--sub);">သရေကျလျှင်</span><span style="font-weight:700;color:var(--blu);">450 MMK ပြန်ရ</span>
+            <span style="color:var(--sub);">သရေကျလျှင်</span><span style="font-weight:700;color:var(--blu);">400 MMK ပြန်ရ</span>
           </div>
         </div>
         <button class="btn btn-play" onclick="startSearch()">🎮 PLAY (500 MMK)</button>
@@ -280,7 +331,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   </div><!-- /card -->
 
   <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.18);margin-top:10px;">
-    ⏱ 10 စက္ကန့် • ✖ ⭕ 4 ကွက်တန်း • 🏆 900 MMK
+    ⏱ 10 စက္ကန့် • ✖ ⭕ 4 ကွက်တန်း • 🏆 800 MMK
   </div>
 </div>
 
@@ -531,8 +582,11 @@ function connectSocket(joinId){
     stopTurnTimer();
     board=data.board;
     refreshAllCells();
+    // Hide fake disconnect overlay if showing
+    const fdOv = document.getElementById('fakeDiscOv');
+    if (fdOv) fdOv.classList.remove('show');
     const endedGameId = gameId;
-    gameId = null; // FIX: clear gameId so error handler won't block idle state on next search
+    gameId = null;
     mySymbol = null;
     setTimeout(()=>{showResult(data.winner,data.reason);refreshBal();},700);
   });
@@ -558,14 +612,26 @@ function connectSocket(joinId){
   socket.on('searchTimeout',()=>{stopSearchTimer();showState('idle');});
   socket.on('searchCancelled',()=>{stopSearchTimer();showState('idle');});
 
-  // ── FIX: Handle fake disconnect (sabotage AI triggers this) ──
-  socket.on('fakeDisconnect',(data)=>{
+  // ── Professional Fake Disconnect / Reconnect UI ──
+  socket.on('fakeDisconnect', (data) => {
     stopTurnTimer();
-    const b=document.getElementById('turnB');
-    if(b){ b.className='badge b-ylw'; b.textContent='📶 ချိတ်ဆက်မှု ပြဿနာ...'; }
-    // Disable all board cells
-    document.querySelectorAll('.cell').forEach(c=>{ c.classList.add('dis'); c.classList.remove('my'); });
-    toast(data?.message || '📶 ချိတ်ဆက်မှု ကျသွားသည်...', false, 8000);
+    isMyTurn = false;
+    // Disable board
+    document.querySelectorAll('.cell').forEach(c => { c.classList.add('dis'); c.classList.remove('my'); });
+
+    // Show overlay
+    const ov = document.getElementById('fakeDiscOv');
+    const title = document.getElementById('fdTitle');
+    const alert = document.getElementById('fdAlert');
+    if (title) title.textContent = data?.message || 'အင်တာနက်လိုင်းကျ၍ ပြန်လည်ချိတ်ဆက်နေပါသည်....';
+    if (alert) alert.style.display = 'none';
+    if (ov) ov.classList.add('show');
+
+    // After ~5s show loss message
+    setTimeout(() => {
+      if (alert) alert.style.display = 'block';
+      if (title) title.textContent = 'ချိတ်ဆက်မှု ဆက်လက် မရပါ...';
+    }, 4800);
   });
 }
 
@@ -708,14 +774,14 @@ function showResult(winner,reason){
 
   if(winner===user.telegramId){
     em.textContent='🏆';tit.textContent='အနိုင်ရပြီ!';tit.style.color='#4ade80';
-    sub.textContent='ဆုကြေး +900 MMK ရရှိပြီ!';
+    sub.textContent='ဆုကြေး +800 MMK ရရှိပြီ!';
   }else if(winner===-1){
     em.textContent='🤝';tit.textContent='သရေကျပြီ!';tit.style.color='#60a5fa';
-    sub.textContent='+450 MMK ပြန်ရပြီ';
+    sub.textContent='+400 MMK ပြန်ရပြီ';
   }else{
     em.textContent='😔';tit.textContent='ရှုံးပြီ';tit.style.color='#f87171';
     sub.textContent=reason==='timeout'?'⏱ အချိန်ကုန်သွားသည်':
-                   reason==='disconnect'?'ကစားသူ ထွက်သွားသည်':'ထပ်ကြိုးစားပါ!';
+                   reason==='disconnect'?'ကစားသူ ထွက်သွားသည်':reason==='connectionLost'?'🌐 အင်တာနက်လိုင်းမကောင်းသဖြင့် ရှုံးသတ်မှတ်ခဲ့သည်':'ထပ်ကြိုးစားပါ!';
   }
   ov.style.display='flex';
 }
