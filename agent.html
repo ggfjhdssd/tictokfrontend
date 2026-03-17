@@ -12,7 +12,7 @@
   --bdr:rgba(255,255,255,.07);--bdr2:rgba(255,255,255,.13);
   --acc:#5c35f5;--pk:#f54565;--grn:#00cc88;--blu:#3d9eff;--ylw:#f5b800;
   --tx:#eaeaf2;--sub:rgba(255,255,255,.32);
-  --nav-h:64px;--safe-b:env(safe-area-inset-bottom,0px);
+  --nav-h:58px;--safe-b:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;}
@@ -67,7 +67,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
   padding:12px 12px calc(var(--nav-h) + var(--safe-b) + 8px);display:none;}
 .page.active{display:block;}
 
-.bnav{flex-shrink:0;display:grid;grid-template-columns:repeat(6,1fr);
+.bnav{flex-shrink:0;display:grid;grid-template-columns:repeat(5,1fr);
   height:var(--nav-h);padding-bottom:var(--safe-b);
   background:var(--sur);border-top:1px solid var(--bdr);}
 .bn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
@@ -75,8 +75,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
   font-family:'Outfit',sans-serif;position:relative;transition:color .15s;}
 .bn.on{color:var(--acc);}
 .bn.on .bn-dot{opacity:1;}
-.bn-ic{font-size:1.2rem;line-height:1;}
-.bn-lb{font-size:9px;font-weight:700;}
+.bn-ic{font-size:1.1rem;line-height:1;}
+.bn-lb{font-size:8px;font-weight:700;}
 .bn-badge{position:absolute;top:6px;right:calc(50% - 16px);
   background:var(--pk);color:#fff;font-size:9px;font-weight:900;
   border-radius:99px;padding:1px 5px;min-width:16px;text-align:center;display:none;}
@@ -341,25 +341,14 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
       </div>
     </div>
 
-    <!-- LEVELS PAGE -->
+    <!-- LEVELS PAGE (includes tree) -->
     <div class="page" id="pg-levels">
       <div class="sec">
-        <div class="sec-t">📊 Level Progress</div>
+        <div class="sec-t">📊 Level & Downline</div>
         <button class="btn btn-gh btn-sm" onclick="loadLevels(true)">🔄</button>
       </div>
       <div id="levelList">
         <div class="empty"><div class="ei">📊</div><div class="et">Loading...</div></div>
-      </div>
-    </div>
-
-    <!-- TREE PAGE -->
-    <div class="page" id="pg-tree">
-      <div class="sec">
-        <div class="sec-t">🌳 Downline Tree</div>
-        <button class="btn btn-gh btn-sm" onclick="loadTree(true)">🔄</button>
-      </div>
-      <div class="card" id="treeCard">
-        <div class="empty"><div class="ei">🌳</div><div class="et">Loading...</div></div>
       </div>
     </div>
 
@@ -431,9 +420,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
     </button>
     <button class="bn" id="bn-levels" onclick="go('levels');loadLevels()">
       <div class="bn-ic">📊</div><div class="bn-lb">Levels</div><div class="bn-dot"></div>
-    </button>
-    <button class="bn" id="bn-tree" onclick="go('tree');loadTree()">
-      <div class="bn-ic">🌳</div><div class="bn-lb">Tree</div><div class="bn-dot"></div>
     </button>
     <button class="bn" id="bn-history" onclick="go('history');loadHistory(1)">
       <div class="bn-ic">📜</div><div class="bn-lb">History</div><div class="bn-dot"></div>
@@ -546,7 +532,6 @@ function renderShell(){
   updateStats();
   // Pre-load all tabs
   loadLevels();
-  loadTree();
   loadHistory(1);
   loadMems();
   loadDeposits();
@@ -619,18 +604,24 @@ async function loadLevels(force=false){
   try{
     const d = await api('/api/downline/tree/'+G.tid);
     G.levLoaded = true;
-    const entries = Object.entries(d); // level1..level10
+    const entries = Object.entries(d);
+    const totalAll = Math.max(1, ...entries.map(([,v])=>v.count));
     el.innerHTML = entries.map(([key, val], i)=>{
       const lv = i+1;
+      const pct = Math.round((val.count/totalAll)*100);
       return `<div class="lv-row">
         <div class="lv-badge">L${lv}</div>
-        <div class="lv-info">
-          <div class="lv-name">Level ${lv}</div>
-          <div class="lv-rate">${COMM_RATES[i]} commission</div>
-        </div>
-        <div class="lv-right">
-          <div class="lv-count">${val.count} ယောက်</div>
-          <div class="lv-comm">${(val.commission||0).toLocaleString()} ကျပ်</div>
+        <div class="lv-info" style="flex:1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div class="lv-name">Level ${lv} <span style="font-size:10px;color:var(--ylw);font-weight:700;">${COMM_RATES[i]}</span></div>
+            <div style="text-align:right;">
+              <span class="lv-count">${val.count} ယောက်</span>
+              ${val.commission>0?`<span style="font-size:10px;color:var(--grn);margin-left:6px;">${(val.commission||0).toLocaleString()} ကျပ်</span>`:''}
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,.07);border-radius:99px;height:4px;overflow:hidden;margin-top:5px;">
+            <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#5c35f5,#00cc88);border-radius:99px;transition:width .5s;"></div>
+          </div>
         </div>
       </div>`;
     }).join('');
