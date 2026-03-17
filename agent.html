@@ -535,6 +535,7 @@ function renderShell(){
   loadHistory(1);
   loadMems();
   loadDeposits();
+  startDepRefresh();
 }
 
 function updateStats(){
@@ -739,8 +740,8 @@ async function refreshAll(){
 
 
 /* ══ DEPOSITS ══ */
-let _depLoaded = false;
 const _processingDeps = new Set();
+let _depRefreshTimer = null;
 
 function setBadge(n){
   const b1=document.getElementById('depNavBdg');
@@ -754,13 +755,24 @@ function setBadge(n){
   }
 }
 
-async function loadDeposits(force=false){
-  if(_depLoaded && !force) return;
+// Auto-refresh deposits every 20s when on deposits tab
+function startDepRefresh(){
+  stopDepRefresh();
+  _depRefreshTimer = setInterval(()=>{
+    if(G.tab==='deposits') loadDeposits();
+  }, 20000);
+}
+function stopDepRefresh(){ clearInterval(_depRefreshTimer); }
+
+async function loadDeposits(){
   const el=document.getElementById('depList');
-  el.innerHTML=`<div class="empty"><div class="ei">⏳</div><div class="et">Loading...</div></div>`;
+  if(!el) return;
+  // Only show spinner if currently empty
+  if(el.innerHTML.includes('Loading...') || el.innerHTML.includes('empty')) {
+    el.innerHTML=`<div class="empty"><div class="ei">⏳</div><div class="et">Loading...</div></div>`;
+  }
   try{
     const deps=await api('/api/agent/deposits?status=pending');
-    _depLoaded=true;
     setBadge(deps.length);
     if(!deps.length){
       el.innerHTML=`<div class="empty"><div class="ei">✅</div><div class="et">Pending Deposit မရှိသေးပါ</div></div>`;
