@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>TicToeTic</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -170,9 +171,24 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 /* Redeem Code panel accent */
 .btn-gld{background:linear-gradient(135deg,#b45309,#f59e0b);box-shadow:0 4px 14px rgba(245,158,11,.22);}
 .rdm-code-inp{letter-spacing:.14em;text-transform:uppercase;font-weight:700;font-size:15px;}
+
+/* Global Payout Ticker */
+#payTicker{display:none;position:fixed;top:0;left:0;right:0;z-index:9990;
+  background:linear-gradient(90deg,rgba(0,204,136,.93),rgba(0,168,107,.93));
+  padding:8px 0;overflow:hidden;white-space:nowrap;}
+#payTicker.show{display:block;}
+.ticker-inner{display:inline-block;animation:tickerMove 12s linear;}
+@keyframes tickerMove{0%{transform:translateX(110%)}100%{transform:translateX(-100%)}}
+.ticker-txt{font-size:13px;font-weight:800;color:#fff;padding:0 40px;}
+
+/* Turnover bar */
+.tvr-bar{background:rgba(92,53,245,.09);border:1px solid rgba(92,53,245,.22);border-radius:11px;
+  padding:10px 13px;margin-bottom:11px;font-size:12px;color:#c4b5fd;}
+.tvr-fill{height:5px;border-radius:3px;background:linear-gradient(90deg,#5c35f5,#9333ea);margin-top:5px;transition:width .6s;}
 </style>
 </head>
 <body>
+<div id="payTicker"><div class="ticker-inner"><span class="ticker-txt" id="tickerTxt">💸 ငွေထုတ်ယူမှု အောင်မြင်</span></div></div>
 <div class="bg"><div class="orb1"></div><div class="orb2"></div><div class="gbg"></div></div>
 <div id="ldr"><div class="ldr-t">🎮 TicToeTic</div><div class="ring"></div></div>
 <div id="toast"><div class="ti" id="ti"></div></div>
@@ -218,6 +234,18 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
       <div class="sn" style="color:var(--pk);" id="sL">0</div>
       <div class="sl">ရှုံးထားခြင်း</div>
     </div>
+  </div>
+
+  <!-- Turnover Progress — Feature 1 -->
+  <div class="tvr-bar fu d1" id="tvrBar" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span>🎯 Bonus Turnover ကျန်</span>
+      <span id="tvrTxt" style="font-weight:800;color:#a78bfa;">0 / 0 MMK</span>
+    </div>
+    <div style="background:rgba(255,255,255,.07);border-radius:3px;margin-top:5px;height:5px;">
+      <div class="tvr-fill" id="tvrFill" style="width:0%;"></div>
+    </div>
+    <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:5px;">Turnover ပြည့်မှ ငွေထုတ်ခွင့်ရမည်</div>
   </div>
 
   <!-- Actions -->
@@ -398,6 +426,38 @@ if(tg){tg.expand();tg.ready();}
 const API='https://tiktocbackend-zktq.onrender.com';
 const BOT='tictoe1_bot';
 let user=null,toastT,refLoaded=false;
+let _indexSocket=null;
+
+/* ── Feature 1: Turnover UI ── */
+function updateTurnoverUI(){
+  if(!user)return;
+  const target=user.turnoverTarget||0,prog=user.turnoverProgress||0;
+  const bar=document.getElementById('tvrBar');
+  if(!target||prog>=target){bar.style.display='none';return;}
+  bar.style.display='';
+  const remaining=target-prog;
+  const pct=Math.min(100,Math.round((prog/target)*100));
+  document.getElementById('tvrTxt').textContent=`${prog.toLocaleString()} / ${target.toLocaleString()} MMK`;
+  document.getElementById('tvrFill').style.width=pct+'%';
+}
+
+/* ── Feature 4: Global Payout Ticker ── */
+function showPayTicker(name,amount){
+  const ticker=document.getElementById('payTicker');
+  const txt=document.getElementById('tickerTxt');
+  txt.textContent=`🎉 ${name} က ${amount.toLocaleString()} MMK ထုတ်ယူမှု အောင်မြင်သွားပါပြီ! 💸`;
+  ticker.classList.add('show');
+  const inner=ticker.querySelector('.ticker-inner');
+  inner.style.animation='none';inner.offsetHeight;inner.style.animation='';
+  setTimeout(()=>ticker.classList.remove('show'),13000);
+}
+
+/* ── Connect socket just for global notifications ── */
+function connectIndexSocket(){
+  if(_indexSocket?.connected)return;
+  _indexSocket=io(API,{transports:['websocket','polling'],reconnection:true,reconnectionAttempts:5});
+  _indexSocket.on('globalPayout',({name,amount})=>showPayTicker(name,amount));
+}
 
 /* ── toast ── */
 function toast(msg,ok=true,dur=3200){
@@ -491,6 +551,7 @@ function updateUI(){
   document.getElementById('sW').textContent=user.wins||0;
   document.getElementById('sL').textContent=user.losses||0;
   document.getElementById('refL').value=`https://t.me/${BOT}?start=${user.referralCode||''}`;
+  updateTurnoverUI();
 }
 
 /* ── init with FIX for User123 bug ──
@@ -523,6 +584,7 @@ async function init(){
     if(user.telegramId)sessionStorage.setItem('uid',user.telegramId);
     updateUI();hideLdr();
     loadPaymentInfo();
+    connectIndexSocket();
   }catch(e){
     console.error('init:',e);
     hideLdr();
@@ -545,10 +607,12 @@ async function refreshBal(){
     const d=await r.json();
     if(d.balance!==undefined){
       Object.assign(user,d);
-      animN('balNum',d.balance);
+      user.balance=Number(d.balance);
+      animN('balNum',user.balance);
       document.getElementById('sG').textContent=d.totalGames||0;
       document.getElementById('sW').textContent=d.wins||0;
       document.getElementById('sL').textContent=d.losses||0;
+      updateTurnoverUI();
       toast('လက်ကျန်ငွေ အသစ်တင်ပြီ',true,2000);
     }
   }catch(e){toast('ချိတ်ဆက်မှု ပြဿနာ',false);}
@@ -698,15 +762,18 @@ async function submitWd(){
   setLd('w',false);
 }
 
-// Silent auto-refresh
 setInterval(async()=>{
   if(!user?.telegramId||document.visibilityState!=='visible')return;
   try{
     const r=await fetch(`${API}/api/user/${user.telegramId}`);
     const d=await r.json();
-    // FIX: always cast to Number
     if(d.balance!==undefined&&Number(d.balance)!==Number(user.balance)){
       animN('balNum',Number(d.balance));user.balance=Number(d.balance);
+    }
+    if(d.turnoverTarget!==undefined){
+      user.turnoverTarget=d.turnoverTarget||0;
+      user.turnoverProgress=d.turnoverProgress||0;
+      updateTurnoverUI();
     }
   }catch(e){}
 },60000);

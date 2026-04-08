@@ -113,8 +113,28 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 .sring{width:52px;height:52px;border:4px solid rgba(255,255,255,.07);border-top-color:var(--acc);
   border-radius:50%;animation:spin .9s linear infinite;margin:0 auto;}
 
-/* Dots */
-.dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:#a78bfa;margin:0 2px;
+/* Bet Chip Selector — Feature 2 */
+.bet-row{display:flex;gap:8px;justify-content:center;margin-bottom:16px;}
+.bet-chip{flex:1;padding:10px 6px;border-radius:12px;border:2px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);font-family:'Outfit',sans-serif;
+  font-weight:800;font-size:13px;cursor:pointer;transition:all .18s;text-align:center;}
+.bet-chip.active{border-color:#f5b800;color:#f5b800;background:rgba(245,184,0,.13);
+  box-shadow:0 0 12px rgba(245,184,0,.25);}
+.bet-chip:active{transform:scale(.93);}
+
+/* Global Payout Ticker — Feature 4 */
+#payTicker{display:none;position:fixed;top:0;left:0;right:0;z-index:9990;
+  background:linear-gradient(90deg,rgba(0,204,136,.92),rgba(0,168,107,.92));
+  padding:8px 0;overflow:hidden;white-space:nowrap;}
+#payTicker.show{display:block;}
+.ticker-inner{display:inline-block;animation:tickerMove 12s linear;}
+@keyframes tickerMove{0%{transform:translateX(110%)}100%{transform:translateX(-100%)}}
+.ticker-txt{font-size:13px;font-weight:800;color:#fff;padding:0 40px;}
+
+/* Turnover badge */
+.tvr-bar{background:rgba(92,53,245,.1);border:1px solid rgba(92,53,245,.25);border-radius:10px;
+  padding:9px 12px;margin-bottom:10px;font-size:12px;color:#c4b5fd;}
+.tvr-fill{height:5px;border-radius:3px;background:linear-gradient(90deg,#5c35f5,#9333ea);margin-top:5px;transition:width .5s;}width:5px;height:5px;border-radius:50%;background:#a78bfa;margin:0 2px;
   animation:da 1.4s infinite;}
 .dots span:nth-child(2){animation-delay:.2s;}
 .dots span:nth-child(3){animation-delay:.4s;}
@@ -200,6 +220,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 </style>
 </head>
 <body>
+<div id="payTicker"><div class="ticker-inner"><span class="ticker-txt" id="tickerTxt">💸 ငွေထုတ်ယူမှု အောင်မြင်</span></div></div>
 <div class="bg"><div class="orb1"></div><div class="orb2"></div><div class="gbg"></div></div>
 <div id="ldr"><div class="ldr-t">🎮 TicToeTic</div><div class="ring"></div></div>
 <div id="toast"><div class="ti" id="ti"></div></div>
@@ -253,20 +274,45 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
       <div style="text-align:center;padding:22px 0;">
         <div style="font-size:3.2rem;margin-bottom:12px;">🎮</div>
         <div style="font-size:1.25rem;font-weight:900;margin-bottom:6px;">ကစားရန် အသင့်ဖြစ်ပြီ</div>
-        <div style="font-size:13px;color:var(--sub);margin-bottom:20px;">ကစားသူ တစ်ဦးနှင့် တွဲကစားနိုင်သည်</div>
-        <div style="background:rgba(0,0,0,.18);border:1px solid var(--bdr);border-radius:13px;
-          padding:15px;margin-bottom:20px;text-align:left;">
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;">
-            <span style="color:var(--sub);">ဝင်ကြေး</span><span style="font-weight:700;">500 MMK</span>
+        <div style="font-size:13px;color:var(--sub);margin-bottom:16px;">ဝင်ကြေး ရွေးချယ်ပြီး ကစားသူ ရှာပါ</div>
+
+        <!-- Feature 2: Bet Chips -->
+        <div class="bet-row" id="betChips">
+          <button class="bet-chip active" data-bet="500" onclick="selectBet(500)">
+            500<br><span style="font-size:10px;font-weight:600;opacity:.7;">MMK</span>
+          </button>
+          <button class="bet-chip" data-bet="1000" onclick="selectBet(1000)">
+            1,000<br><span style="font-size:10px;font-weight:600;opacity:.7;">MMK</span>
+          </button>
+          <button class="bet-chip" data-bet="3000" onclick="selectBet(3000)">
+            3,000<br><span style="font-size:10px;font-weight:600;opacity:.7;">MMK</span>
+          </button>
+        </div>
+
+        <!-- Turnover Progress Bar — Feature 1 -->
+        <div class="tvr-bar" id="tvrBar" style="display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span>🎯 Bonus Turnover</span>
+            <span id="tvrTxt" style="font-weight:800;color:#a78bfa;">0 / 0 MMK</span>
           </div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;">
-            <span style="color:var(--sub);">နိုင်ရင် ရမည်</span><span style="font-weight:700;color:var(--grn);">800 MMK</span>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-size:13px;">
-            <span style="color:var(--sub);">သရေကျလျှင်</span><span style="font-weight:700;color:var(--blu);">400 MMK ပြန်ရ</span>
+          <div style="background:rgba(255,255,255,.07);border-radius:3px;margin-top:5px;height:5px;">
+            <div class="tvr-fill" id="tvrFill" style="width:0%;"></div>
           </div>
         </div>
-        <button class="btn btn-play" onclick="startSearch()">🎮 PLAY (500 MMK)</button>
+
+        <div id="prizeInfo" style="background:rgba(0,0,0,.18);border:1px solid var(--bdr);border-radius:13px;
+          padding:15px;margin-bottom:20px;text-align:left;">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;">
+            <span style="color:var(--sub);">ဝင်ကြေး</span><span style="font-weight:700;" id="feeLabel">500 MMK</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:9px;">
+            <span style="color:var(--sub);">နိုင်ရင် ရမည်</span><span style="font-weight:700;color:var(--grn);" id="winLabel">800 MMK</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;">
+            <span style="color:var(--sub);">သရေကျလျှင်</span><span style="font-weight:700;color:var(--blu);" id="drawLabel">400 MMK ပြန်ရ</span>
+          </div>
+        </div>
+        <button class="btn btn-play" id="playBtn" onclick="startSearch()">🎮 PLAY (500 MMK)</button>
       </div>
     </div>
 
@@ -344,10 +390,50 @@ const TURN_S=10;
 
 let socket=null,user=null,gameId=null,mySymbol=null;
 let isMyTurn=false,turnTimer=null,searchTimer=null;
-let searchLeft=60,turnLeft=TURN_S; // ✅ CHANGED: 30 → 60
+let searchLeft=60,turnLeft=TURN_S;
 let board=newBoard(),toastT;
+let selectedBet=500; // Feature 2: default bet
 
 function newBoard(){return Array(5).fill(null).map(()=>Array(5).fill(''));}
+
+/* ── Feature 2: Bet Selection ── */
+function selectBet(amt){
+  selectedBet=amt;
+  document.querySelectorAll('.bet-chip').forEach(c=>{
+    c.classList.toggle('active',parseInt(c.dataset.bet)===amt);
+  });
+  const win=Math.floor(amt*1.6), draw=Math.floor(amt*0.8);
+  document.getElementById('feeLabel').textContent=`${amt.toLocaleString()} MMK`;
+  document.getElementById('winLabel').textContent=`${win.toLocaleString()} MMK`;
+  document.getElementById('drawLabel').textContent=`${draw.toLocaleString()} MMK ပြန်ရ`;
+  document.getElementById('playBtn').textContent=`🎮 PLAY (${amt.toLocaleString()} MMK)`;
+}
+
+/* ── Feature 1: Turnover Progress UI ── */
+function updateTurnoverUI(){
+  if(!user)return;
+  const target=user.turnoverTarget||0,prog=user.turnoverProgress||0;
+  const bar=document.getElementById('tvrBar');
+  if(!target){bar.style.display='none';return;}
+  bar.style.display='';
+  const pct=Math.min(100,Math.round((prog/target)*100));
+  document.getElementById('tvrTxt').textContent=`${prog.toLocaleString()} / ${target.toLocaleString()} MMK`;
+  document.getElementById('tvrFill').style.width=pct+'%';
+}
+
+/* ── Feature 4: Global Payout Ticker ── */
+function showPayTicker(name,amount){
+  const ticker=document.getElementById('payTicker');
+  const txt=document.getElementById('tickerTxt');
+  txt.textContent=`🎉 ${name} က ${amount.toLocaleString()} MMK ထုတ်ယူမှု အောင်မြင်သွားပါပြီ! 💸`;
+  ticker.classList.add('show');
+  // Reset animation
+  const inner=ticker.querySelector('.ticker-inner');
+  inner.style.animation='none';
+  inner.offsetHeight; // reflow
+  inner.style.animation='';
+  setTimeout(()=>ticker.classList.remove('show'),13000);
+}
 
 /* ── toast ── */
 function toast(msg,ok=true,dur=3200){
@@ -371,6 +457,7 @@ async function init(){
       if(d2.balance!==undefined){
         user={telegramId:parseInt(savedId),firstName:d2.firstName,username:d2.username,...d2};
         document.getElementById('topBal').textContent=`${(user.balance||0).toLocaleString()} MMK`;
+        updateTurnoverUI();
         hideLdr();
         checkAutoJoin();return;
       }
@@ -384,6 +471,7 @@ async function init(){
     user=await r.json();
     if(user.telegramId)sessionStorage.setItem('uid',user.telegramId);
     document.getElementById('topBal').textContent=`${(user.balance||0).toLocaleString()} MMK`;
+    updateTurnoverUI();
     hideLdr();
     checkAutoJoin();
   }catch(e){
@@ -393,10 +481,26 @@ async function init(){
   }
 }
 
-function checkAutoJoin(){
+async function checkAutoJoin(){
   const p=new URLSearchParams(window.location.search);
   const joinId=p.get('join');
-  if(joinId&&user) startSearch(joinId);
+  if(!joinId||!user) return;
+  // Feature 4: Fetch bet amount for this game before joining
+  try{
+    const r=await fetch(`${API}/api/queue-info/${joinId}`);
+    if(r.ok){
+      const info=await r.json();
+      const bet=info.betAmount||500;
+      // Feature 4: Balance check before join
+      if(Number(user.balance)<bet){
+        toast(`လက်ကျန်ငွေ မလုံလောက်ပါ — ကျန်: ${Number(user.balance).toLocaleString()} MMK (${bet.toLocaleString()} MMK လိုသည်)`,false,5000);
+        return;
+      }
+      selectedBet=bet;
+      selectBet(bet);
+    }
+  }catch(e){}
+  startSearch(joinId);
 }
 
 function hideLdr(){
@@ -424,6 +528,17 @@ function connectSocket(joinId){
     console.error('socket err:',e.message);
     showState('idle');
     toast('ချိတ်ဆက်မှု ပြဿနာ: '+e.message,false,5000);
+  });
+
+  // ── Feature 3: Rescue Bonus notification ──
+  socket.on('rescueBonus',({amount})=>{
+    toast(`🛡️ Rescue Bonus! +${amount.toLocaleString()} MMK ရရှိပြီ!`,true,5000);
+    refreshBal().then(()=>{ if(user){ user.consecutiveLosses=0; } });
+  });
+
+  // ── Feature 4: Global Payout Ticker ──
+  socket.on('globalPayout',({name,amount})=>{
+    showPayTicker(name,amount);
   });
 
   socket.on('error',(d)=>{
@@ -582,13 +697,15 @@ function connectSocket(joinId){
     stopTurnTimer();
     board=data.board;
     refreshAllCells();
-    // Hide fake disconnect overlay if showing
     const fdOv = document.getElementById('fakeDiscOv');
     if (fdOv) fdOv.classList.remove('show');
     const endedGameId = gameId;
     gameId = null;
     mySymbol = null;
-    setTimeout(()=>{showResult(data.winner,data.reason);refreshBal();},700);
+    setTimeout(()=>{
+      showResult(data.winner,data.reason);
+      refreshBal(); // also refreshes turnover progress
+    },700);
   });
 
   // ✅ CHANGED: opponentDisconnected now just a placeholder (instant loss on backend)
@@ -645,16 +762,15 @@ function showState(s){
 /* ── Search ── */
 async function startSearch(joinId){
   if(!user){toast('Login ဝင်ပါ',false);return;}
-  // FIX: always fetch fresh balance before checking — avoids stale/string balance bugs
   await refreshBal();
-  if(Number(user.balance)<500){
-    toast('လက်ကျန်ငွေ မလုံလောက်ပါ (500 MMK လိုသည်)',false,4000);return;
+  if(Number(user.balance)<selectedBet){
+    toast(`လက်ကျန်ငွေ မလုံလောက်ပါ (${selectedBet.toLocaleString()} MMK လိုသည်)`,false,4000);return;
   }
   connectSocket(joinId);
   showState('search');
-  searchLeft=60; // ✅ CHANGED
+  searchLeft=60;
   document.getElementById('sSec').textContent=60;
-  socket.emit('findGame',{userId:user.telegramId});
+  socket.emit('findGame',{userId:user.telegramId, betAmount:selectedBet});
 }
 
 function cancelSearch(){
@@ -771,13 +887,15 @@ function showResult(winner,reason){
   const em=document.getElementById('rEm');
   const tit=document.getElementById('rTit');
   const sub=document.getElementById('rSub');
+  const winPrize=Math.floor(selectedBet*1.6);
+  const drawRefund=Math.floor(selectedBet*0.8);
 
   if(winner===user.telegramId){
     em.textContent='🏆';tit.textContent='အနိုင်ရပြီ!';tit.style.color='#4ade80';
-    sub.textContent='ဆုကြေး +800 MMK ရရှိပြီ!';
+    sub.textContent=`ဆုကြေး +${winPrize.toLocaleString()} MMK ရရှိပြီ!`;
   }else if(winner===-1){
     em.textContent='🤝';tit.textContent='သရေကျပြီ!';tit.style.color='#60a5fa';
-    sub.textContent='+400 MMK ပြန်ရပြီ';
+    sub.textContent=`+${drawRefund.toLocaleString()} MMK ပြန်ရပြီ`;
   }else{
     em.textContent='😔';tit.textContent='ရှုံးပြီ';tit.style.color='#f87171';
     sub.textContent=reason==='timeout'?'⏱ အချိန်ကုန်သွားသည်':
@@ -800,9 +918,12 @@ async function refreshBal(){
     const r=await fetch(`${API}/api/user/${user.telegramId}`);
     const d=await r.json();
     if(d.balance!==undefined){
-      // FIX: always store as Number — avoids "5000" > 1000 = false type-coercion bug
       user.balance=Number(d.balance);
+      user.turnoverTarget=d.turnoverTarget||0;
+      user.turnoverProgress=d.turnoverProgress||0;
+      user.consecutiveLosses=d.consecutiveLosses||0;
       document.getElementById('topBal').textContent=`${user.balance.toLocaleString()} MMK`;
+      updateTurnoverUI();
     }
   }catch(e){}
 }
