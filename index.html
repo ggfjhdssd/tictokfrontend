@@ -391,29 +391,43 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
     <div class="rule-grid">
       <div class="ritem">
         <div class="rico">🎟️</div>
-        <div class="rlbl">ပွဲဝင်ကြေး</div>
-        <div class="rval">500 MMK</div>
+        <div class="rlbl">Standard (500)</div>
+        <div class="rval">နိုင် 800 MMK</div>
       </div>
       <div class="ritem" style="border-color:rgba(0,204,136,.16);background:rgba(0,204,136,.03);">
-        <div class="rico">🏆</div>
-        <div class="rlbl">အနိုင်ရမည်</div>
-        <div class="rval" style="color:var(--grn);">800 MMK</div>
+        <div class="rico">🥈</div>
+        <div class="rlbl">Pro (1,000)</div>
+        <div class="rval" style="color:var(--grn);">နိုင် 1,700 MMK</div>
+      </div>
+      <div class="ritem" style="border-color:rgba(245,184,0,.22);background:rgba(245,184,0,.04);">
+        <div class="rico">👑</div>
+        <div class="rlbl">VIP (3,000)</div>
+        <div class="rval" style="color:var(--ylw);">နိုင် 5,500 MMK</div>
       </div>
       <div class="ritem" style="border-color:rgba(61,158,255,.16);background:rgba(61,158,255,.03);">
-        <div class="rico">🤝</div>
-        <div class="rlbl">သရေကျလျှင်</div>
-        <div class="rval" style="color:var(--blu);">400 MMK ပြန်ရ</div>
-      </div>
-      <div class="ritem" style="border-color:rgba(245,184,0,.16);background:rgba(245,184,0,.03);">
         <div class="rico">⏱️</div>
         <div class="rlbl">တစ်လှည့်ချိန်</div>
-        <div class="rval" style="color:var(--ylw);">10 စက္ကန့်</div>
+        <div class="rval" style="color:var(--blu);">10 စက္ကန့်</div>
       </div>
     </div>
-    <div style="background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:11px;
-      padding:11px;display:flex;align-items:center;gap:9px;">
-      <span style="font-size:1.3rem;">⚔️</span>
-      <span style="font-size:13px;color:var(--sub);">5×5 ကွက်တွင် <b style="color:var(--tx);">4 ကွက်တန်း</b> အောင်စီနိုင်လျှင် အနိုင်ရသည်</span>
+
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:4px;">
+      <div style="background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:11px;padding:11px;display:flex;align-items:flex-start;gap:9px;">
+        <span style="font-size:1.2rem;flex-shrink:0;">⚔️</span>
+        <span style="font-size:12px;color:var(--sub);line-height:1.6;">5×5 ကွက်တွင် <b style="color:var(--tx);">4 ကွက်တန်း</b> အောင်စီနိုင်လျှင် အနိုင်ရသည်</span>
+      </div>
+      <div style="background:rgba(245,184,0,.05);border:1px solid rgba(245,184,0,.18);border-radius:11px;padding:11px;display:flex;align-items:flex-start;gap:9px;">
+        <span style="font-size:1.2rem;flex-shrink:0;">🎁</span>
+        <span style="font-size:12px;color:#fde68a;line-height:1.7;">ပထမဆုံး ငွေသွင်းသူများအတွက် <b>5,000 MMK</b> သွင်းလျှင် <b>500 MMK Bonus</b> ရရှိပါမည် (Turnover ×5 ပြည့်ရန် လိုအပ်သည်)</span>
+      </div>
+      <div style="background:rgba(92,53,245,.05);border:1px solid rgba(92,53,245,.2);border-radius:11px;padding:11px;display:flex;align-items:flex-start;gap:9px;">
+        <span style="font-size:1.2rem;flex-shrink:0;">🛡️</span>
+        <span style="font-size:12px;color:#c4b5fd;line-height:1.7;">၅ ပွဲဆက်တိုက် ရှုံးနိမ့်ပါက <b>Rescue Bonus 200 MMK</b> ပြန်လည် ရရှိပါမည်</span>
+      </div>
+      <div style="background:rgba(245,69,101,.05);border:1px solid rgba(245,69,101,.18);border-radius:11px;padding:11px;display:flex;align-items:flex-start;gap:9px;">
+        <span style="font-size:1.2rem;flex-shrink:0;">👑</span>
+        <span style="font-size:12px;color:#fca5a5;line-height:1.7;">VIP အခန်း (3,000 တန်) တွင် ကစားပါက အနိုင်ရရှိမှုအတွက် <b>အမြတ် 5,500 MMK</b> ပိုမို ရရှိပါမည်</span>
+      </div>
     </div>
   </div>
 
@@ -729,20 +743,42 @@ async function submitWd(){
   const name=document.getElementById('wN').value.trim();
   const num=document.getElementById('wP').value.trim();
   const methodLabel = wdMethod === 'wave' ? 'Wave Pay' : 'KPay';
-  // FIX: strip commas before parsing — parseInt('3,000') = 3, Number('3000') = 3000
   const rawAmt=document.getElementById('wA').value;
   const amt=Number(rawAmt.replace(/,/g,''));
   if(!name)return toast(`${methodLabel} အမည် ဖြည့်ပါ`,false);
   if(!num)return toast(`${methodLabel} ဖုန်းနံပါတ် ဖြည့်ပါ`,false);
   if(isNaN(amt)||amt<2500)return toast('အနည်းဆုံး 2,500 MMK ဖြည့်ပါ',false);
   if(!user)return toast('Login ဝင်ပါ',false);
-  // Always re-fetch fresh balance before withdraw — avoid stale data
+
+  // ── Feature 4: Pre-check turnover before server round-trip ──
+  const tvrTarget = user.turnoverTarget||0;
+  const tvrProg   = user.turnoverProgress||0;
+  const tvrLeft   = tvrTarget - tvrProg;
+  if(tvrLeft > 0){
+    toast(`🎯 Bonus Turnover မပြည့်သေးပါ!\nကျန်လောင်းရန်: ${tvrLeft.toLocaleString()} MMK ဖိုး ကစားမှ ငွေထုတ်ခွင့်ရမည်`,false,5500);
+    return;
+  }
+
+  // Always re-fetch fresh balance before withdraw
   try{
     const fr=await fetch(`${API}/api/user/${user.telegramId}`);
     const fd=await fr.json();
-    // FIX: always store as Number to avoid String vs Number comparison bugs
-    if(fd.balance!==undefined){user.balance=Number(fd.balance);animN('balNum',user.balance);}
+    if(fd.balance!==undefined){
+      user.balance=Number(fd.balance);
+      user.turnoverTarget=fd.turnoverTarget||0;
+      user.turnoverProgress=fd.turnoverProgress||0;
+      animN('balNum',user.balance);
+      updateTurnoverUI();
+    }
   }catch(e){}
+
+  // Re-check turnover with fresh data
+  const freshLeft = (user.turnoverTarget||0) - (user.turnoverProgress||0);
+  if(freshLeft > 0){
+    toast(`🎯 Bonus Turnover မပြည့်သေးပါ!\nကျန်လောင်းရန်: ${freshLeft.toLocaleString()} MMK ဖိုး ကစားမှ ငွေထုတ်ခွင့်ရမည်`,false,5500);
+    return;
+  }
+
   if(amt>Number(user.balance)){
     return toast(`လက်ကျန်ငွေ မလုံလောက်ပါ (ကျန်: ${Number(user.balance).toLocaleString()} MMK)`,false,4500);
   }
@@ -757,7 +793,10 @@ async function submitWd(){
       toast('တောင်းဆိုမှု အောင်မြင်! Admin စစ်ဆေးနေသည်',true,4000);
       document.getElementById('wN').value='';document.getElementById('wP').value='';
       document.getElementById('wA').value='';togglePanel('wd');
-    }else toast(res.error||'Error',false,4500);
+    }else{
+      // Server-side turnover error — show clearly
+      toast(res.error||'Error',false,5000);
+    }
   }catch(e){toast('ဆာဗာ ချိတ်ဆက်မှု ပြဿနာ',false);}
   setLd('w',false);
 }

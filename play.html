@@ -376,8 +376,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 
   </div><!-- /card -->
 
-  <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.18);margin-top:10px;">
-    ⏱ 10 စက္ကန့် • ✖ ⭕ 4 ကွက်တန်း • 🏆 800 MMK
+  <div style="text-align:center;font-size:11px;color:rgba(255,255,255,.18);margin-top:10px;line-height:1.8;">
+    ⏱ 10s • ✖⭕ 4-in-a-row wins<br>
+    🎟️ 500→800 • 🥈 1,000→1,700 • 👑 3,000→5,500 MMK
   </div>
 </div>
 
@@ -396,16 +397,21 @@ let selectedBet=500; // Feature 2: default bet
 
 function newBoard(){return Array(5).fill(null).map(()=>Array(5).fill(''));}
 
-/* ── Feature 2: Bet Selection ── */
+/* ── Feature 2: Bet Selection — exact prize table ── */
+const BET_TABLE = {
+  500:  { win: 800,  draw: 450  },
+  1000: { win: 1700, draw: 900  },
+  3000: { win: 5500, draw: 2800 },
+};
 function selectBet(amt){
   selectedBet=amt;
   document.querySelectorAll('.bet-chip').forEach(c=>{
     c.classList.toggle('active',parseInt(c.dataset.bet)===amt);
   });
-  const win=Math.floor(amt*1.6), draw=Math.floor(amt*0.8);
+  const prizes = BET_TABLE[amt] || BET_TABLE[500];
   document.getElementById('feeLabel').textContent=`${amt.toLocaleString()} MMK`;
-  document.getElementById('winLabel').textContent=`${win.toLocaleString()} MMK`;
-  document.getElementById('drawLabel').textContent=`${draw.toLocaleString()} MMK ပြန်ရ`;
+  document.getElementById('winLabel').textContent=`${prizes.win.toLocaleString()} MMK`;
+  document.getElementById('drawLabel').textContent=`${prizes.draw.toLocaleString()} MMK ပြန်ရ`;
   document.getElementById('playBtn').textContent=`🎮 PLAY (${amt.toLocaleString()} MMK)`;
 }
 
@@ -887,19 +893,20 @@ function showResult(winner,reason){
   const em=document.getElementById('rEm');
   const tit=document.getElementById('rTit');
   const sub=document.getElementById('rSub');
-  const winPrize=Math.floor(selectedBet*1.6);
-  const drawRefund=Math.floor(selectedBet*0.8);
+  const prizes = BET_TABLE[selectedBet] || BET_TABLE[500];
 
   if(winner===user.telegramId){
     em.textContent='🏆';tit.textContent='အနိုင်ရပြီ!';tit.style.color='#4ade80';
-    sub.textContent=`ဆုကြေး +${winPrize.toLocaleString()} MMK ရရှိပြီ!`;
+    sub.textContent=`🎉 ဆုကြေး +${prizes.win.toLocaleString()} MMK ရရှိပြီ!`;
   }else if(winner===-1){
     em.textContent='🤝';tit.textContent='သရေကျပြီ!';tit.style.color='#60a5fa';
-    sub.textContent=`+${drawRefund.toLocaleString()} MMK ပြန်ရပြီ`;
+    sub.textContent=`+${prizes.draw.toLocaleString()} MMK ပြန်ရပြီ`;
   }else{
     em.textContent='😔';tit.textContent='ရှုံးပြီ';tit.style.color='#f87171';
     sub.textContent=reason==='timeout'?'⏱ အချိန်ကုန်သွားသည်':
-                   reason==='disconnect'?'ကစားသူ ထွက်သွားသည်':reason==='connectionLost'?'🌐 အင်တာနက်လိုင်းမကောင်းသဖြင့် ရှုံးသတ်မှတ်ခဲ့သည်':'ထပ်ကြိုးစားပါ!';
+                   reason==='disconnect'?'ကစားသူ ထွက်သွားသည်':
+                   reason==='connectionLost'?'🌐 အင်တာနက်လိုင်းမကောင်းသဖြင့် ရှုံးသတ်မှတ်ခဲ့သည်':
+                   'ထပ်ကြိုးစားပါ!';
   }
   ov.style.display='flex';
 }
