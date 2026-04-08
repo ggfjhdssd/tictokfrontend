@@ -399,7 +399,7 @@ function newBoard(){return Array(5).fill(null).map(()=>Array(5).fill(''));}
 
 /* ── Feature 2: Bet Selection — exact prize table ── */
 const BET_TABLE = {
-  500:  { win: 800,  draw: 450  },
+  500:  { win: 800,  draw: 400  },
   1000: { win: 1700, draw: 900  },
   3000: { win: 5500, draw: 2800 },
 };
@@ -899,8 +899,8 @@ function showResult(winner,reason){
     em.textContent='🏆';tit.textContent='အနိုင်ရပြီ!';tit.style.color='#4ade80';
     sub.textContent=`🎉 ဆုကြေး +${prizes.win.toLocaleString()} MMK ရရှိပြီ!`;
   }else if(winner===-1){
-    em.textContent='🤝';tit.textContent='သရေကျပြီ!';tit.style.color='#60a5fa';
-    sub.textContent=`+${prizes.draw.toLocaleString()} MMK ပြန်ရပြီ`;
+    em.textContent='🤝';tit.textContent='သရေကျပါသည်!';tit.style.color='#60a5fa';
+    sub.textContent=`+${prizes.draw.toLocaleString()} MMK ပြန်ရရှိပါသည်`;
   }else{
     em.textContent='😔';tit.textContent='ရှုံးပြီ';tit.style.color='#f87171';
     sub.textContent=reason==='timeout'?'⏱ အချိန်ကုန်သွားသည်':
