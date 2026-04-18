@@ -992,12 +992,6 @@ async function toggleAgent(tid, makeAgent){
 let agentPage=1, agentDeb;
 function debounceAgent(){clearTimeout(agentDeb);agentDeb=setTimeout(()=>loadAgents(1),400);}
 
-const BOX_CFG=[
-  {box:1,people:5,bonus:500},{box:2,people:10,bonus:2000},{box:3,people:30,bonus:10000},
-  {box:4,people:50,bonus:30000},{box:5,people:70,bonus:80000},{box:6,people:100,bonus:300000},
-  {box:7,people:150,bonus:800000},{box:8,people:200,bonus:2000000},{box:9,people:70,bonus:1000000},
-  {box:10,people:10,bonus:2000,loop:true}
-];
 
 async function loadAgents(page=1){
   agentPage=page;
@@ -1015,7 +1009,7 @@ async function loadAgents(page=1){
               ${u.isBanned?'<span class="bdg bg-red" style="margin-left:5px;">Banned</span>':''}
             </div>
             <div style="font-size:11px;color:var(--sub);margin-top:2px;">@${esc(u.username||'-')} • ID: ${u.telegramId}</div>
-            <div style="font-size:11px;color:var(--blu);margin-top:2px;">👥 ${u.totalReferrals||0} referrals • 🏆 ${(u.agentData?.completedBoxes||0)}/10 boxes</div>
+            <div style="font-size:11px;color:var(--blu);margin-top:2px;">👥 ${u.totalReferrals||0} referrals</div>
           </div>
           <div style="text-align:right;">
             <div style="font-weight:900;color:var(--grn);font-size:14px;">${(u.balance||0).toLocaleString()} ကျပ်</div>
@@ -1035,28 +1029,6 @@ async function loadAgents(page=1){
 async function showAgentDet(u){
   const det=document.getElementById('agentDet');
   det.style.display='block';
-  const ms = u.agentData?.milestones||{};
-  const boxHtml = BOX_CFG.map(cfg=>{
-    const m = ms[cfg.box]||{current:0,claimed:false};
-    const pct = Math.min(100,Math.round((m.current/cfg.people)*100));
-    const done = m.claimed && !cfg.loop;
-    return `<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px;margin-bottom:6px;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
-        <span style="font-weight:700;font-size:12px;">${cfg.loop?'♾️ ':''}Box ${cfg.box} ${done?'<span style="color:var(--grn)">✅</span>':''}</span>
-        <span style="font-size:11px;color:var(--ylw);">${(cfg.bonus).toLocaleString()} ကျပ် bonus</span>
-      </div>
-      <div style="background:rgba(255,255,255,.07);border-radius:99px;height:5px;overflow:hidden;margin-bottom:4px;">
-        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#5c35f5,#00cc88);border-radius:99px;"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--sub);">
-        <span>${m.current}/${cfg.people} ယောက်</span>
-        <div style="display:flex;gap:4px;">
-          <button class="btn btn-ylw" style="padding:3px 8px;font-size:10px;" onclick="adminAwardBox(${u.telegramId},${cfg.box})">🎁 Award</button>
-          <button class="btn btn-gh" style="padding:3px 8px;font-size:10px;" onclick="adminResetBox(${u.telegramId},${cfg.box})">🔄 Reset</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
 
   det.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
@@ -1069,7 +1041,6 @@ async function showAgentDet(u){
       <div class="det-item"><div class="rlbl">လက်ကျန်</div><div style="font-weight:900;color:var(--grn);">${(u.balance||0).toLocaleString()} ကျပ်</div></div>
       <div class="det-item"><div class="rlbl">Referrals</div><div style="color:var(--blu);">${u.totalReferrals||0} ယောက်</div></div>
       <div class="det-item"><div class="rlbl">Total Earned</div><div style="color:var(--ylw);">${(u.agentData?.totalEarned||0).toLocaleString()} ကျပ်</div></div>
-      <div class="det-item"><div class="rlbl">Boxes ပြီး</div><div>${u.agentData?.completedBoxes||0}/10</div></div>
     </div>
     <div style="background:rgba(0,204,136,.06);border:1px solid rgba(0,204,136,.2);border-radius:12px;padding:12px;margin-bottom:12px;">
       <div class="rlbl" style="margin-bottom:7px;">💰 Agent Balance ဖြည့်ပေးမည်</div>
@@ -1084,7 +1055,7 @@ async function showAgentDet(u){
       <div class="rlbl" style="margin-bottom:7px;">📱 Agent Payment နံပါတ် သတ်မှတ်မည် (Deposit Page)</div>
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="font-size:11px;color:#f5b800;font-weight:700;">📱 KPay</div>
-        <input class="inp" id="agKpayNum" type="tel" placeholder="09xxxxxxxxx" value="${esc(u.agentData?.agentKpayNumber||'')}">
+        <input class="inp" id="agKpayNum" type="tel" placeholder="09xxxxxxxxx (မထည့်လည်းရ)" value="${esc(u.agentData?.agentKpayNumber||'')}">
         <input class="inp" id="agKpayName" placeholder="KPay အကောင့်ပိုင်ရှင် နာမည်" value="${esc(u.agentData?.agentKpayName||'')}">
         <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);cursor:pointer;">
           <input type="checkbox" id="agHasWave" ${u.agentData?.hasWave?'checked':''} style="width:16px;height:16px;" onchange="document.getElementById('agWaveFields').style.display=this.checked?'flex':'none'">
@@ -1095,29 +1066,20 @@ async function showAgentDet(u){
           <input class="inp" id="agWaveNum" type="tel" placeholder="Wave Pay 09xxxxxxxxx" value="${esc(u.agentData?.agentWaveNumber||'')}">
           <input class="inp" id="agWaveName" placeholder="Wave Pay အကောင့်ပိုင်ရှင် နာမည်" value="${esc(u.agentData?.agentWaveName||'')}">
         </div>
+        <div style="font-size:11px;color:rgba(255,165,0,.7);margin-top:2px;">⚠️ KPay သို့မဟုတ် Wave Pay အနည်းဆုံး တစ်ခု ထည့်ပေးပါ</div>
         <button class="btn btn-ylw" onclick="saveAgentKpay(${u.telegramId})">
           <span id="agKpayTx">💾 Payment Info သိမ်းမည်</span><div class="spn" id="agKpaySp" style="display:none;"></div>
         </button>
       </div>
       <div style="font-size:11px;color:var(--sub);margin-top:5px;">ဤ Agent ၏ Link မှ ဝင်လာသော User များ ဤ နံပါတ်ကိုသာ မြင်ရမည်</div>
     </div>
-    <div style="font-weight:800;font-size:.85rem;margin:12px 0 8px;">📦 Milestone Boxes</div>
-    ${boxHtml}
     <button class="btn btn-red btn-full" style="margin-top:8px;" onclick="toggleAgent(${u.telegramId},false)">
       🎯 Agent Role ဖြုတ်မည်
     </button>`;
   det.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
-async function adminAwardBox(tid,box){
-  if(!confirm(`Box ${box} ဆုကြေး Agent ${tid} ကို ပေးမည်?`))return;
-  try{
-    const d=await api('/api/admin/agents/'+tid+'/award-box',{method:'POST',body:JSON.stringify({box})});
-    toast(`🎁 Box ${box} Award ပြီ (+${(d.bonus||0).toLocaleString()} ကျပ်)`,true);
-    loadAgents(agentPage);
-    document.getElementById('agentDet').style.display='none';
-  }catch(e){toast('Error: '+e.message,false);}
-}
+
 
 async function adjAgentBal(tid){
   const a=parseInt(document.getElementById('agBalA').value);
@@ -1138,7 +1100,12 @@ async function saveAgentKpay(tid){
   const hasWave=document.getElementById('agHasWave').checked;
   const waveNumber=document.getElementById('agWaveNum')?.value.trim()||'';
   const waveName=document.getElementById('agWaveName')?.value.trim()||'';
-  if(!kpayNumber)return toast('KPay နံပါတ် ထည့်ပါ',false);
+
+  // Require at least one payment method
+  const hasKpay = !!kpayNumber;
+  const hasWaveVal = !!(hasWave && waveNumber);
+  if(!hasKpay && !hasWaveVal) return toast('KPay သို့မဟုတ် Wave Pay အနည်းဆုံး တစ်ခု ထည့်ပေးပါ',false);
+
   document.getElementById('agKpayTx').style.display='none';
   document.getElementById('agKpaySp').style.display='inline-block';
   try{
@@ -1215,15 +1182,7 @@ function toggleInvDetail(id){
   el.style.display=el.style.display==='none'?'block':'none';
 }
 
-async function adminResetBox(tid,box){
-  if(!confirm(`Box ${box} ကို Reset လုပ်မည်?`))return;
-  try{
-    await api('/api/admin/agents/'+tid+'/reset-box',{method:'POST',body:JSON.stringify({box})});
-    toast(`🔄 Box ${box} Reset ပြီ`,true);
-    loadAgents(agentPage);
-    document.getElementById('agentDet').style.display='none';
-  }catch(e){toast('Error: '+e.message,false);}
-}
+
 
 function parseErr(e){
   try{return JSON.parse(e.message).error||e.message;}catch{return e.message;}

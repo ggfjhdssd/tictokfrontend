@@ -199,37 +199,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
 .bal-banner-t{font-size:12px;font-weight:800;color:#f5b800;margin-bottom:3px;}
 .bal-banner-b{font-size:11px;color:rgba(245,184,0,.75);}
 
-/* ══ PAGE: BOXES ══ */
-.box-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
-.ms{background:var(--sur2);border:1px solid var(--bdr);border-radius:14px;
-  padding:13px;position:relative;overflow:hidden;transition:border-color .2s,background .2s;}
-.ms.ms-done{border-color:rgba(0,204,136,.35);background:rgba(0,204,136,.06);}
-.ms.ms-ready{border-color:rgba(92,53,245,.4);background:rgba(92,53,245,.07);
-  box-shadow:0 0 18px rgba(92,53,245,.13);}
-.ms.ms-loop{border-color:rgba(245,184,0,.35);background:rgba(245,184,0,.06);}
-.ms.ms-locked{opacity:.38;}
-.ms-tag{position:absolute;top:8px;right:8px;font-size:9px;font-weight:800;border-radius:5px;padding:2px 5px;}
-.ms-tag-loop{background:rgba(245,184,0,.2);color:#f5b800;border:1px solid rgba(245,184,0,.3);}
-.ms-tag-done{background:rgba(0,204,136,.2);color:#00cc88;border:1px solid rgba(0,204,136,.3);}
-.ms-num{font-size:9px;font-weight:800;color:var(--sub);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px;}
-.ms-bonus{font-size:.9rem;font-weight:900;color:var(--ylw);line-height:1;margin-bottom:2px;}
-.ms-bonus.gc{color:var(--grn);}
-.ms-req{font-size:10px;color:var(--sub);line-height:1.4;margin-bottom:7px;}
-.ms-pb{width:100%;height:5px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin-bottom:3px;}
-.ms-pf{height:100%;border-radius:99px;transition:width .5s ease;}
-.fp{background:linear-gradient(90deg,#5c35f5,#3d9eff);}
-.fg{background:linear-gradient(90deg,#059669,#00cc88);}
-.fy{background:linear-gradient(90deg,#b45309,#f5b800);}
-.ms-pt{display:flex;justify-content:space-between;font-size:9px;color:var(--sub);margin-bottom:7px;}
-.ms-btn{width:100%;padding:7px;border-radius:8px;border:none;cursor:pointer;
-  font-family:'Outfit',sans-serif;font-weight:800;font-size:11px;
-  transition:opacity .12s,transform .1s;}
-.ms-btn:active:not(:disabled){transform:scale(.97);}
-.ms-btn:disabled{opacity:.4;cursor:not-allowed;}
-.mb-claim{background:linear-gradient(135deg,#5c35f5,#10b981);color:#fff;}
-.mb-done{background:rgba(0,204,136,.15);color:var(--grn);}
-.mb-wait{background:rgba(255,255,255,.05);color:var(--sub);}
-.mb-lock{background:rgba(255,255,255,.04);color:var(--sub);}
 
 /* ══ PAGE: MEMBERS ══ */
 .mem{display:flex;align-items:center;gap:10px;
@@ -284,11 +253,10 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
   </header>
 
   <!-- Stats Bar -->
-  <div class="sbar">
+  <div class="sbar" style="grid-template-columns:repeat(3,1fr);">
     <div class="sb-it"><div class="sb-val" style="color:#3d9eff" id="sRef">0</div><div class="sb-lbl">ဖိတ်သူ</div></div>
     <div class="sb-it"><div class="sb-val" style="color:#f5b800;font-size:.8rem" id="sSales">0</div><div class="sb-lbl">Sales ကျပ်</div></div>
     <div class="sb-it"><div class="sb-val" style="color:#00cc88;font-size:.8rem" id="sEarned">0</div><div class="sb-lbl">Earned ကျပ်</div></div>
-    <div class="sb-it"><div class="sb-val" style="color:#f54565" id="sBox">0/10</div><div class="sb-lbl">Box ပြီး</div></div>
   </div>
 
   <!-- Pages -->
@@ -348,16 +316,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
       </div>
     </div>
 
-    <!-- BOXES -->
-    <div class="page" id="pg-boxes">
-      <div class="sec mb10">
-        <div class="sec-t">🏆 Milestone Boxes</div>
-        <div class="sec-s">ဆုကြေးစနစ်</div>
-      </div>
-      <div class="box-grid" id="boxGrid">
-        <div class="empty" style="grid-column:span 2"><div class="ei">📦</div><div class="et">Loading...</div></div>
-      </div>
-    </div>
 
     <!-- MEMBERS -->
     <div class="page" id="pg-members">
@@ -428,7 +386,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
   </div><!-- /pages -->
 
   <!-- Bottom Nav -->
-  <nav class="bnav">
+  <nav class="bnav" style="grid-template-columns:repeat(5,1fr);">
     <button class="bn on" id="bn-home" onclick="go('home')">
       <div class="bn-ic">🏠</div><div class="bn-lb">Home</div><div class="bn-dot"></div>
     </button>
@@ -441,9 +399,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
     </button>
     <button class="bn" id="bn-commission" onclick="go('commission')">
       <div class="bn-ic">📊</div><div class="bn-lb">Commission</div><div class="bn-dot"></div>
-    </button>
-    <button class="bn" id="bn-boxes" onclick="go('boxes')">
-      <div class="bn-ic">🏆</div><div class="bn-lb">Boxes</div><div class="bn-dot"></div>
     </button>
     <button class="bn" id="bn-members" onclick="go('members')">
       <div class="bn-ic">👥</div><div class="bn-lb">Members</div><div class="bn-dot"></div>
@@ -458,18 +413,6 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--tx);
 <script>
 /* ══ CONFIG ══ */
 const BACKEND='https://tiktocbackend-zktq.onrender.com';
-const BOX_CFG=[
-  {box:1, people:5,   perPerson:1000,  bonus:500,      label:'Box 1'},
-  {box:2, people:10,  perPerson:2000,  bonus:2000,     label:'Box 2'},
-  {box:3, people:30,  perPerson:3000,  bonus:10000,    label:'Box 3'},
-  {box:4, people:50,  perPerson:5000,  bonus:30000,    label:'Box 4'},
-  {box:5, people:70,  perPerson:10000, bonus:80000,    label:'Box 5'},
-  {box:6, people:100, perPerson:20000, bonus:300000,   label:'Box 6'},
-  {box:7, people:150, perPerson:30000, bonus:800000,   label:'Box 7'},
-  {box:8, people:200, perPerson:50000, bonus:2000000,  label:'Box 8'},
-  {box:9, people:70,  perPerson:70000, bonus:1000000,  label:'Box 9'},
-  {box:10,people:10,  perPerson:2000,  bonus:2000,     label:'Box 10',loop:true}
-];
 
 /* ── Burmese error map ── */
 const ERR={
@@ -585,7 +528,6 @@ function renderShell(){
   updateStats();
   G.link=`https://t.me/${G.data.botUsername||'tictoe1_bot'}?start=${G.data.referralCode}`;
   document.getElementById('refTxt').textContent=G.link;
-  renderBoxes();
   loadAgentPaymentInfo();
 }
 
@@ -596,7 +538,6 @@ function updateStats(){
   document.getElementById('sRef').textContent=d.totalReferrals||0;
   document.getElementById('sSales').textContent=(d.totalSales||0).toLocaleString();
   document.getElementById('sEarned').textContent=(d.totalEarned||0).toLocaleString();
-  document.getElementById('sBox').textContent=(d.completedBoxes||0)+'/10';
   document.getElementById('hSales').textContent=(d.totalSales||0).toLocaleString();
   document.getElementById('hEarned').textContent=(d.totalEarned||0).toLocaleString();
 }
@@ -918,60 +859,6 @@ function removeCard(id){
   },270);
 }
 
-/* ══ BOXES ══ */
-function renderBoxes(){
-  const grid=document.getElementById('boxGrid');
-  if(!G.data)return;
-  const ms=G.data.milestones||{};
-  const b2=ms[2]?.claimed||false;
-  grid.innerHTML=BOX_CFG.map(cfg=>{
-    const m=ms[cfg.box]||{current:0,claimed:false};
-    const loop=cfg.loop||false;
-    const locked=loop&&!b2;
-    const pct=locked?0:Math.min(100,Math.round((m.current/cfg.people)*100));
-    const done=m.claimed&&!loop;
-    const ready=m.current>=cfg.people&&!done;
-    let cls='ms';
-    if(done)cls+=' ms-done';
-    else if(ready)cls+=' ms-ready';
-    else if(loop&&!locked)cls+=' ms-loop';
-    else if(locked)cls+=' ms-locked';
-    const fcls=loop?'fy':(done?'fg':'fp');
-    let tag='';
-    if(loop)tag=`<div class="ms-tag ms-tag-loop">♾️ LOOP</div>`;
-    else if(done)tag=`<div class="ms-tag ms-tag-done">✅</div>`;
-    let btn='';
-    if(locked)btn=`<button class="ms-btn mb-lock" disabled>🔒 Box 2 ပြီးမှ</button>`;
-    else if(done)btn=`<button class="ms-btn mb-done" disabled>✅ ပြီးပြီ</button>`;
-    else if(ready)btn=`<button class="ms-btn mb-claim" id="cl-${cfg.box}" onclick="claimBox(${cfg.box},this)"><span class="btx">🎁 ယူမည်</span><span class="bsp"></span></button>`;
-    else btn=`<button class="ms-btn mb-wait" disabled>${cfg.people-m.current} ယောက် ထပ်လို</button>`;
-    return `
-    <div class="${cls}">
-      ${tag}
-      <div class="ms-num">${cfg.label}</div>
-      <div class="ms-bonus${done?' gc':''}">${K(cfg.bonus)}</div>
-      <div class="ms-req">${cfg.people} ယောက် × ${K(cfg.perPerson)}</div>
-      <div class="ms-pb"><div class="ms-pf ${fcls}" style="width:${pct}%"></div></div>
-      <div class="ms-pt"><span>${locked?'Locked':m.current+'/'+cfg.people}</span><span>${locked?'':pct+'%'}</span></div>
-      ${btn}
-    </div>`;
-  }).join('');
-}
-
-async function claimBox(box,btn){
-  if(btn?.disabled)return;
-  busy(btn,true);
-  try{
-    const r=await api('/api/agent/claim-box',{method:'POST',body:JSON.stringify({box})});
-    toast(`🎉 Box ${box} ဆုကြေး ${K(r.bonus)} ရပြီ!`,'ok');
-    G.data=await api('/api/agent/panel');
-    updateStats();renderBoxes();
-  }catch(e){
-    toast(myerr(e.message),'err');
-    busy(btn,false);
-  }
-}
-
 /* ══ MEMBERS ══ */
 async function loadMems(showMsg=false){
   const el=document.getElementById('memList');
@@ -1001,7 +888,7 @@ async function loadMems(showMsg=false){
 async function refreshAll(){
   try{
     G.data=await api('/api/agent/panel');
-    updateStats();renderBoxes();
+    updateStats();
     toast('🔄 Refresh ပြီးပါပြီ','ok');
   }catch(e){toast(myerr(e.message),'err');}
 }
