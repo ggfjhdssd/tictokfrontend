@@ -225,7 +225,39 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 <div id="ldr"><div class="ldr-t">🎮 TicToeTic</div><div class="ring"></div></div>
 <div id="toast"><div class="ti" id="ti"></div></div>
 
-<!-- Fake Disconnect Overlay -->
+<!-- Opponent Disconnect Grace Period Overlay -->
+<div id="discGraceOv" style="
+  position:fixed;inset:0;z-index:5000;
+  background:rgba(0,0,0,.82);
+  backdrop-filter:blur(7px);
+  display:none;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:18px;
+  animation:fdIn .35s ease;
+">
+  <div class="fd-spinner"></div>
+  <div style="text-align:center;max-width:280px;">
+    <div id="discGraceMsg" style="font-size:1.05rem;font-weight:800;color:#eaeaf2;line-height:1.6;margin-bottom:8px;"></div>
+    <div id="discGraceCount" style="font-size:2.2rem;font-weight:900;color:#f5b800;"></div>
+    <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:4px;">စက္ကန့် ကျန်ရှိသည်</div>
+  </div>
+  <div id="discGraceAlert" style="
+    background:rgba(0,204,136,.12);
+    border:1px solid rgba(0,204,136,.3);
+    border-radius:14px;
+    padding:12px 20px;
+    text-align:center;
+    max-width:280px;
+    display:none;
+  ">
+    <div style="font-size:.95rem;font-weight:800;color:#6ee7b7;margin-bottom:4px;">🔄 ပြန်ချိတ်ဆက်မှု အောင်မြင်ပြီ</div>
+    <div style="font-size:12px;color:rgba(110,231,183,.75);">ဂိမ်းဆက်ကစားပါ</div>
+  </div>
+</div>
+
+<!-- Fake Disconnect Overlay (AI games only) -->
 <div id="fakeDiscOv">
   <div class="fd-spinner"></div>
   <div class="fd-title" id="fdTitle">အင်တာနက်လိုင်းကျ၍ ပြန်လည်ချိတ်ဆက်နေပါသည်....</div>
@@ -699,20 +731,7 @@ function connectSocket(joinId){
     updateTurnUI();resetTurnTimer();
   });
 
-  socket.on('gameOver',(data)=>{
-    stopTurnTimer();
-    board=data.board;
-    refreshAllCells();
-    const fdOv = document.getElementById('fakeDiscOv');
-    if (fdOv) fdOv.classList.remove('show');
-    const endedGameId = gameId;
-    gameId = null;
-    mySymbol = null;
-    setTimeout(()=>{
-      showResult(data.winner,data.reason);
-      refreshBal(); // also refreshes turnover progress
-    },700);
-  });
+  socket.on('gameOver',(data)=>{\n    stopTurnTimer();\n    board=data.board;\n    refreshAllCells();\n    // Close both disconnect overlays\n    const fdOv = document.getElementById('fakeDiscOv');\n    if (fdOv) fdOv.classList.remove('show');\n    closeDiscGraceOverlay();\n    const endedGameId = gameId;\n    gameId = null;\n    mySymbol = null;\n    setTimeout(()=>{\n      showResult(data.winner,data.reason);\n      refreshBal(); // also refreshes turnover progress\n    },700);\n  });\n\n  // ── Opponent Disconnect: 15-second grace period UI ──\n  socket.on('opponentDisconnecting', ({username, gracePeriod}) => {\n    // Freeze board but don't end game yet\n    document.querySelectorAll('.cell').forEach(c => c.classList.add('dis'));\n    stopTurnTimer();\n\n    const ov = document.getElementById('discGraceOv');\n    const msg = document.getElementById('discGraceMsg');\n    const cnt = document.getElementById('discGraceCount');\n    const alert = document.getElementById('discGraceAlert');\n    if (!ov) return;\n\n    msg.textContent = `${username} ၏ အင်တာနက်လိုင်း မတည်ငြိမ်သဖြင့် ခေတ္တစောင့်ပေးပါ (${gracePeriod} စက္ကန့်)`;\n    alert.style.display = 'none';\n    ov.style.display = 'flex';\n\n    let left = gracePeriod;\n    cnt.textContent = left;\n    if (window._discGraceInterval) clearInterval(window._discGraceInterval);\n    window._discGraceInterval = setInterval(() => {\n      left--;\n      cnt.textContent = Math.max(0, left);\n      if (left <= 0) {\n        clearInterval(window._discGraceInterval);\n        window._discGraceInterval = null;\n      }\n    }, 1000);\n  });\n\n  // Opponent came back within grace period\n  socket.on('opponentReconnected', () => {\n    const ov = document.getElementById('discGraceOv');\n    const alert = document.getElementById('discGraceAlert');\n    const cnt = document.getElementById('discGraceCount');\n    if (window._discGraceInterval) { clearInterval(window._discGraceInterval); window._discGraceInterval = null; }\n    if (cnt) cnt.textContent = '';\n    if (alert) alert.style.display = 'block';\n    // Close overlay after short delay\n    setTimeout(() => { closeDiscGraceOverlay(); updateInteract(); }, 1800);\n    // Resume turn timer\n    if (isMyTurn) startTurnTimer();\n  });
 
   // ✅ CHANGED: opponentDisconnected now just a placeholder (instant loss on backend)
   socket.on('opponentDisconnected',()=>{
@@ -763,6 +782,12 @@ function showState(s){
   document.getElementById('sIdle').style.display=s==='idle'?'block':'none';
   document.getElementById('sSearch').style.display=s==='search'?'block':'none';
   document.getElementById('sPlay').style.display=s==='play'?'block':'none';
+}
+
+function closeDiscGraceOverlay(){
+  const ov = document.getElementById('discGraceOv');
+  if (ov) ov.style.display='none';
+  if (window._discGraceInterval) { clearInterval(window._discGraceInterval); window._discGraceInterval=null; }
 }
 
 /* ── Search ── */
@@ -895,6 +920,11 @@ function showResult(winner,reason){
   const sub=document.getElementById('rSub');
   const prizes = BET_TABLE[selectedBet] || BET_TABLE[500];
 
+  // Get opponent display name from the board player labels
+  const p1Name = document.getElementById('p1n')?.textContent || 'ကစားသူ';
+  const p2Name = document.getElementById('p2n')?.textContent || 'ကစားသူ';
+  const oppName = mySymbol==='X' ? p2Name : p1Name;
+
   if(winner===user.telegramId){
     em.textContent='🏆';tit.textContent='အနိုင်ရပြီ!';tit.style.color='#4ade80';
     sub.textContent=`🎉 ဆုကြေး +${prizes.win.toLocaleString()} MMK ရရှိပြီ!`;
@@ -903,10 +933,11 @@ function showResult(winner,reason){
     sub.textContent=`+${prizes.draw.toLocaleString()} MMK ပြန်ရရှိပါသည်`;
   }else{
     em.textContent='😔';tit.textContent='ရှုံးပြီ';tit.style.color='#f87171';
-    sub.textContent=reason==='timeout'?'⏱ အချိန်ကုန်သွားသည်':
-                   reason==='disconnect'?'ကစားသူ ထွက်သွားသည်':
-                   reason==='connectionLost'?'🌐 အင်တာနက်လိုင်းမကောင်းသဖြင့် ရှုံးသတ်မှတ်ခဲ့သည်':
-                   'ထပ်ကြိုးစားပါ!';
+    const reasonTxt = reason==='timeout' ? '⏱ အချိန်ကုန်သွားသည်' :
+                      reason==='disconnect' ? `${oppName} ကစားပွဲမှ ထွက်ခွာသွားသည်` :
+                      reason==='connectionLost' ? '🌐 အင်တာနက်လိုင်းမကောင်းသဖြင့် ရှုံးသတ်မှတ်ခဲ့သည်' :
+                      'ထပ်ကြိုးစားပါ!';
+    sub.textContent = reasonTxt;
   }
   ov.style.display='flex';
 }
@@ -915,6 +946,7 @@ function playAgain(){
   document.getElementById('resOv').style.display='none';
   if(socket){socket.disconnect();socket=null;}
   gameId=null;mySymbol=null;isMyTurn=false;board=newBoard();
+  closeDiscGraceOverlay();
   // FIX: refresh balance first so stale "insufficient funds" doesn't block play
   refreshBal().then(()=>{ showState('idle'); });
 }
