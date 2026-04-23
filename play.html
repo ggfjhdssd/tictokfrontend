@@ -81,6 +81,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 .b-grn{background:rgba(0,204,136,.15);border:1px solid rgba(0,204,136,.3);color:#6ee7b7;}
 .b-ylw{background:rgba(245,184,0,.15);border:1px solid rgba(245,184,0,.3);color:#fde68a;}
 .b-pur{background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.3);color:#c4b5fd;}
+.b-red{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;}
 
 /* Timer ring */
 .t-ring{position:relative;width:72px;height:72px;margin:0 auto;}
@@ -113,7 +114,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 .sring{width:52px;height:52px;border:4px solid rgba(255,255,255,.07);border-top-color:var(--acc);
   border-radius:50%;animation:spin .9s linear infinite;margin:0 auto;}
 
-/* Bet Chip Selector — Feature 2 */
+/* Bet Chip Selector */
 .bet-row{display:flex;gap:8px;justify-content:center;margin-bottom:16px;}
 .bet-chip{flex:1;padding:10px 6px;border-radius:12px;border:2px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);font-family:'Outfit',sans-serif;
@@ -122,7 +123,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   box-shadow:0 0 12px rgba(245,184,0,.25);}
 .bet-chip:active{transform:scale(.93);}
 
-/* Global Payout Ticker — Feature 4 */
+/* Global Payout Ticker */
 #payTicker{display:none;position:fixed;top:0;left:0;right:0;z-index:9990;
   background:linear-gradient(90deg,rgba(0,204,136,.92),rgba(0,168,107,.92));
   padding:8px 0;overflow:hidden;white-space:nowrap;}
@@ -134,7 +135,9 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 /* Turnover badge */
 .tvr-bar{background:rgba(92,53,245,.1);border:1px solid rgba(92,53,245,.25);border-radius:10px;
   padding:9px 12px;margin-bottom:10px;font-size:12px;color:#c4b5fd;}
-.tvr-fill{height:5px;border-radius:3px;background:linear-gradient(90deg,#5c35f5,#9333ea);margin-top:5px;transition:width .5s;}width:5px;height:5px;border-radius:50%;background:#a78bfa;margin:0 2px;
+.tvr-fill{height:5px;border-radius:3px;background:linear-gradient(90deg,#5c35f5,#9333ea);margin-top:5px;transition:width .5s;}
+
+.dots span{display:inline-block;width:5px;height:5px;border-radius:50%;background:#a78bfa;margin:0 2px;
   animation:da 1.4s infinite;}
 .dots span:nth-child(2){animation-delay:.2s;}
 .dots span:nth-child(3){animation-delay:.4s;}
@@ -150,7 +153,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 .tok{background:rgba(0,204,136,.88);border:1px solid #34d399;color:#fff;}
 .terr{background:rgba(239,68,68,.88);border:1px solid #f87171;color:#fff;}
 
-/* ✅ NEW: Emote System */
+/* Emote System */
 .emote-wrap{position:relative;display:inline-flex;align-items:center;}
 .emote-btn{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
   border-radius:8px;padding:4px 9px;cursor:pointer;font-size:13px;color:var(--sub);
@@ -167,8 +170,8 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   font-weight:600;color:var(--tx);transition:background .12s;white-space:nowrap;}
 .emote-item:hover,.emote-item:active{background:rgba(255,255,255,.1);}
 
-/* ── Fake Disconnect Overlay ── */
-#fakeDiscOv{
+/* FIX #3: Opponent Disconnect Overlay (replaces fake disconnect — now for real PvP disconnects) */
+#discOv{
   position:fixed;inset:0;z-index:5000;
   background:rgba(0,0,0,.78);
   backdrop-filter:blur(6px);
@@ -179,35 +182,30 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   gap:18px;
   animation:fdIn .35s ease;
 }
-#fakeDiscOv.show{display:flex;}
+#discOv.show{display:flex;}
 @keyframes fdIn{from{opacity:0}to{opacity:1}}
-.fd-spinner{
+.disc-spinner{
   width:64px;height:64px;
   border:5px solid rgba(255,255,255,.1);
-  border-top-color:#5c35f5;
+  border-top-color:#f5b800;
   border-radius:50%;
   animation:spin .9s linear infinite;
 }
-.fd-title{
+.disc-title{
   font-size:1.1rem;font-weight:800;color:#eaeaf2;
   text-align:center;line-height:1.6;max-width:260px;
 }
-.fd-sub{
+.disc-countdown{
+  font-size:2.2rem;font-weight:900;
+  color:#f5b800;
+  min-width:48px;text-align:center;
+}
+.disc-sub{
   font-size:12px;color:rgba(255,255,255,.4);
   text-align:center;
 }
-.fd-alert{
-  background:rgba(239,68,68,.12);
-  border:1px solid rgba(239,68,68,.3);
-  border-radius:14px;
-  padding:14px 20px;
-  text-align:center;
-  max-width:280px;
-  display:none;
-}
-.fd-alert-title{font-size:1rem;font-weight:800;color:#f87171;margin-bottom:6px;}
-.fd-alert-sub{font-size:13px;color:rgba(248,113,113,.75);line-height:1.6;}
 
+/* Emote bubble */
 #emoteBubble{position:fixed;bottom:120px;left:50%;transform:translateX(-50%) scale(0);
   background:linear-gradient(135deg,rgba(92,53,245,.92),rgba(147,51,234,.92));
   border:1px solid rgba(255,255,255,.2);border-radius:22px;padding:10px 20px;
@@ -225,17 +223,13 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
 <div id="ldr"><div class="ldr-t">🎮 TicToeTic</div><div class="ring"></div></div>
 <div id="toast"><div class="ti" id="ti"></div></div>
 
-<!-- Fake Disconnect Overlay -->
-<div id="fakeDiscOv">
-  <div class="fd-spinner"></div>
-  <div class="fd-title" id="fdTitle">အင်တာနက်လိုင်းကျ၍ ပြန်လည်ချိတ်ဆက်နေပါသည်....</div>
-  <div class="fd-sub">ကျေးဇူးပြု၍ စောင့်ဆိုင်းပါ...</div>
-  <div class="fd-alert" id="fdAlert">
-    <div class="fd-alert-title">😔 ချိတ်ဆက်မှု မအောင်မြင်ပါ</div>
-    <div class="fd-alert-sub">အင်တာနက်လိုင်းမကောင်းသဖြင့် သင့်ကို ရှုံးနိမ့်ကြောင်း သတ်မှတ်လိုက်ရသည်</div>
-  </div>
+<!-- FIX #3: Real Disconnect Grace Period Overlay -->
+<div id="discOv">
+  <div class="disc-spinner"></div>
+  <div class="disc-title" id="discTitle">ကစားသူ လိုင်းကျသွားပါသည်</div>
+  <div class="disc-countdown" id="discCountdown">10</div>
+  <div class="disc-sub">ပြန်လည်ချိတ်ဆက်ရန် စောင့်ဆိုင်းနေပါသည်...</div>
 </div>
-
 
 <div id="resOv">
   <div class="res-card">
@@ -276,7 +270,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
         <div style="font-size:1.25rem;font-weight:900;margin-bottom:6px;">ကစားရန် အသင့်ဖြစ်ပြီ</div>
         <div style="font-size:13px;color:var(--sub);margin-bottom:16px;">ဝင်ကြေး ရွေးချယ်ပြီး ကစားသူ ရှာပါ</div>
 
-        <!-- Feature 2: Bet Chips -->
+        <!-- Bet Chips -->
         <div class="bet-row" id="betChips">
           <button class="bet-chip active" data-bet="500" onclick="selectBet(500)">
             500<br><span style="font-size:10px;font-weight:600;opacity:.7;">MMK</span>
@@ -289,7 +283,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
           </button>
         </div>
 
-        <!-- Turnover Progress Bar — Feature 1 -->
+        <!-- Turnover Progress Bar -->
         <div class="tvr-bar" id="tvrBar" style="display:none;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <span>🎯 Bonus Turnover</span>
@@ -332,7 +326,7 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
     <!-- PLAYING -->
     <div id="sPlay" style="display:none;">
 
-      <!-- Player row ✅ CHANGED: added emote button -->
+      <!-- Player row -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;">
         <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">
           <div class="badge b-x" id="p1b" style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">✖ <span id="p1n">You</span></div>
@@ -382,275 +376,255 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);min-height:100vh;color
   </div>
 </div>
 
+<div id="emoteBubble"><div class="eb-name" id="ebName"></div><div id="ebText"></div></div>
+
 <script>
-const tg=window.Telegram?.WebApp;
-if(tg){tg.expand();tg.ready();}
+const tg = window.Telegram?.WebApp;
+if(tg){ tg.expand(); tg.ready(); }
 
-const API='https://tiktocbackend-zktq.onrender.com';
-const TURN_S=10;
+const API = 'https://tiktocbackend-zktq.onrender.com';
+const TURN_S = 10;
 
-let socket=null,user=null,gameId=null,mySymbol=null;
-let isMyTurn=false,turnTimer=null,searchTimer=null;
-let searchLeft=60,turnLeft=TURN_S;
-let board=newBoard(),toastT;
-let selectedBet=500; // Feature 2: default bet
+let socket = null, user = null, gameId = null, mySymbol = null;
+let isMyTurn = false, turnTimer = null, searchTimer = null;
+let searchLeft = 60, turnLeft = TURN_S;
+let board = newBoard(), toastT;
+let selectedBet = 500;
 
-function newBoard(){return Array(5).fill(null).map(()=>Array(5).fill(''));}
+// FIX #4: Track app state separately to properly handle errors during search
+// 'idle' | 'searching' | 'playing'
+let appState = 'idle';
 
-/* ── Feature 2: Bet Selection — exact prize table ── */
+// FIX #3: Disconnect countdown timer
+let discCountdownTimer = null;
+
+function newBoard(){ return Array(5).fill(null).map(()=>Array(5).fill('')); }
+
+/* Bet Selection */
 const BET_TABLE = {
   500:  { win: 800,  draw: 400  },
   1000: { win: 1700, draw: 900  },
   3000: { win: 5500, draw: 2800 },
 };
 function selectBet(amt){
-  selectedBet=amt;
+  selectedBet = amt;
   document.querySelectorAll('.bet-chip').forEach(c=>{
-    c.classList.toggle('active',parseInt(c.dataset.bet)===amt);
+    c.classList.toggle('active', parseInt(c.dataset.bet)===amt);
   });
   const prizes = BET_TABLE[amt] || BET_TABLE[500];
-  document.getElementById('feeLabel').textContent=`${amt.toLocaleString()} MMK`;
-  document.getElementById('winLabel').textContent=`${prizes.win.toLocaleString()} MMK`;
-  document.getElementById('drawLabel').textContent=`${prizes.draw.toLocaleString()} MMK ပြန်ရ`;
-  document.getElementById('playBtn').textContent=`🎮 PLAY (${amt.toLocaleString()} MMK)`;
+  document.getElementById('feeLabel').textContent = `${amt.toLocaleString()} MMK`;
+  document.getElementById('winLabel').textContent = `${prizes.win.toLocaleString()} MMK`;
+  document.getElementById('drawLabel').textContent = `${prizes.draw.toLocaleString()} MMK ပြန်ရ`;
+  document.getElementById('playBtn').textContent = `🎮 PLAY (${amt.toLocaleString()} MMK)`;
 }
 
-/* ── Feature 1: Turnover Progress UI ── */
+/* Turnover Progress UI */
 function updateTurnoverUI(){
-  if(!user)return;
-  const target=user.turnoverTarget||0,prog=user.turnoverProgress||0;
-  const bar=document.getElementById('tvrBar');
-  if(!target){bar.style.display='none';return;}
+  if(!user) return;
+  const target = user.turnoverTarget||0, prog = user.turnoverProgress||0;
+  const bar = document.getElementById('tvrBar');
+  if(!target){ bar.style.display='none'; return; }
   bar.style.display='';
-  const pct=Math.min(100,Math.round((prog/target)*100));
-  document.getElementById('tvrTxt').textContent=`${prog.toLocaleString()} / ${target.toLocaleString()} MMK`;
-  document.getElementById('tvrFill').style.width=pct+'%';
+  const pct = Math.min(100, Math.round((prog/target)*100));
+  document.getElementById('tvrTxt').textContent = `${prog.toLocaleString()} / ${target.toLocaleString()} MMK`;
+  document.getElementById('tvrFill').style.width = pct+'%';
 }
 
-/* ── Feature 4: Global Payout Ticker ── */
-function showPayTicker(name,amount){
-  const ticker=document.getElementById('payTicker');
-  const txt=document.getElementById('tickerTxt');
-  txt.textContent=`🎉 ${name} က ${amount.toLocaleString()} MMK ထုတ်ယူမှု အောင်မြင်သွားပါပြီ! 💸`;
+/* Global Payout Ticker */
+function showPayTicker(name, amount){
+  const ticker = document.getElementById('payTicker');
+  const txt = document.getElementById('tickerTxt');
+  txt.textContent = `🎉 ${name} က ${amount.toLocaleString()} MMK ထုတ်ယူမှု အောင်မြင်သွားပါပြီ! 💸`;
   ticker.classList.add('show');
-  // Reset animation
-  const inner=ticker.querySelector('.ticker-inner');
-  inner.style.animation='none';
-  inner.offsetHeight; // reflow
-  inner.style.animation='';
-  setTimeout(()=>ticker.classList.remove('show'),13000);
+  const inner = ticker.querySelector('.ticker-inner');
+  inner.style.animation = 'none';
+  inner.offsetHeight;
+  inner.style.animation = '';
+  setTimeout(()=>ticker.classList.remove('show'), 13000);
 }
 
-/* ── toast ── */
-function toast(msg,ok=true,dur=3200){
-  const el=document.getElementById('toast'),ti=document.getElementById('ti');
-  ti.textContent=(ok?'✅ ':'⚠️ ')+msg;ti.className='ti '+(ok?'tok':'terr');
-  el.classList.add('show');clearTimeout(toastT);
-  toastT=setTimeout(()=>el.classList.remove('show'),dur);
+/* Toast */
+function toast(msg, ok=true, dur=3200){
+  const el = document.getElementById('toast'), ti = document.getElementById('ti');
+  ti.textContent = (ok?'✅ ':'⚠️ ')+msg;
+  ti.className = 'ti '+(ok?'tok':'terr');
+  el.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>el.classList.remove('show'), dur);
 }
 
-/* ── init: fix User123 bug — use sessionStorage as identity cache ── */
+/* Init */
 async function init(){
   try{
-    const initData=tg?.initData||'';
-    const savedId=sessionStorage.getItem('uid');
+    const initData = tg?.initData||'';
+    const savedId = sessionStorage.getItem('uid');
     let body;
     if(initData){
-      body={initData};
-    }else if(savedId){
-      const r2=await fetch(`${API}/api/user/${savedId}`);
-      const d2=await r2.json();
-      if(d2.balance!==undefined){
-        user={telegramId:parseInt(savedId),firstName:d2.firstName,username:d2.username,...d2};
-        document.getElementById('topBal').textContent=`${(user.balance||0).toLocaleString()} MMK`;
+      body = {initData};
+    } else if(savedId){
+      const r2 = await fetch(`${API}/api/user/${savedId}`);
+      const d2 = await r2.json();
+      if(d2.balance !== undefined){
+        user = {telegramId:parseInt(savedId), firstName:d2.firstName, username:d2.username, ...d2};
+        document.getElementById('topBal').textContent = `${(user.balance||0).toLocaleString()} MMK`;
         updateTurnoverUI();
         hideLdr();
-        checkAutoJoin();return;
+        checkAutoJoin();
+        return;
       }
-      body={telegramId:parseInt(savedId)};
-    }else{
-      body={telegramId:12345};
+      body = {telegramId:parseInt(savedId)};
+    } else {
+      body = {telegramId:12345};
     }
-    const r=await fetch(`${API}/api/auth`,{method:'POST',
-      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    if(!r.ok)throw new Error(r.status);
-    user=await r.json();
-    if(user.telegramId)sessionStorage.setItem('uid',user.telegramId);
-    document.getElementById('topBal').textContent=`${(user.balance||0).toLocaleString()} MMK`;
+    const r = await fetch(`${API}/api/auth`, {method:'POST',
+      headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    if(!r.ok) throw new Error(r.status);
+    user = await r.json();
+    if(user.telegramId) sessionStorage.setItem('uid', user.telegramId);
+    document.getElementById('topBal').textContent = `${(user.balance||0).toLocaleString()} MMK`;
     updateTurnoverUI();
     hideLdr();
     checkAutoJoin();
-  }catch(e){
-    console.error('init:',e);
+  } catch(e){
+    console.error('init:', e);
     hideLdr();
-    toast('ဆာဗာ ချိတ်ဆက်မှု ပြဿနာ',false,5000);
+    toast('ဆာဗာ ချိတ်ဆက်မှု ပြဿနာ', false, 5000);
   }
 }
 
 async function checkAutoJoin(){
-  const p=new URLSearchParams(window.location.search);
-  const joinId=p.get('join');
-  if(!joinId||!user) return;
-  // Feature 4: Fetch bet amount for this game before joining
+  const p = new URLSearchParams(window.location.search);
+  const joinId = p.get('join');
+  if(!joinId || !user) return;
   try{
-    const r=await fetch(`${API}/api/queue-info/${joinId}`);
+    const r = await fetch(`${API}/api/queue-info/${joinId}`);
     if(r.ok){
-      const info=await r.json();
-      const bet=info.betAmount||500;
-      // Feature 4: Balance check before join
+      const info = await r.json();
+      const bet = info.betAmount||500;
       if(Number(user.balance)<bet){
-        toast(`လက်ကျန်ငွေ မလုံလောက်ပါ — ကျန်: ${Number(user.balance).toLocaleString()} MMK (${bet.toLocaleString()} MMK လိုသည်)`,false,5000);
+        toast(`လက်ကျန်ငွေ မလုံလောက်ပါ — ကျန်: ${Number(user.balance).toLocaleString()} MMK (${bet.toLocaleString()} MMK လိုသည်)`, false, 5000);
         return;
       }
-      selectedBet=bet;
+      selectedBet = bet;
       selectBet(bet);
     }
-  }catch(e){}
+  } catch(e){}
   startSearch(joinId);
 }
 
 function hideLdr(){
-  const l=document.getElementById('ldr');l.style.opacity='0';l.style.transition='opacity .3s';
-  setTimeout(()=>{l.style.display='none';document.getElementById('wrap').style.display='block';},280);
+  const l = document.getElementById('ldr');
+  l.style.opacity = '0'; l.style.transition = 'opacity .3s';
+  setTimeout(()=>{ l.style.display='none'; document.getElementById('wrap').style.display='block'; }, 280);
 }
 
 function goHome(){
-  if(socket){socket.disconnect();socket=null;}
-  window.location.href='/index.html';
+  if(socket){ socket.disconnect(); socket=null; }
+  window.location.href = '/index.html';
 }
 
 /* ── Socket ── */
 function connectSocket(joinId){
-  if(socket?.connected)return;
-  socket=io(API,{
-    query:joinId?{join:joinId}:{},
-    transports:['websocket','polling'],
-    reconnection:true,reconnectionAttempts:5,timeout:12000
+  if(socket?.connected) return;
+  socket = io(API, {
+    query: joinId ? {join:joinId} : {},
+    transports: ['websocket','polling'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    timeout: 12000
   });
 
-  socket.on('connect',()=>console.log('✅ socket'));
+  socket.on('connect', ()=>console.log('✅ socket connected'));
 
-  socket.on('connect_error',(e)=>{
-    console.error('socket err:',e.message);
-    showState('idle');
-    toast('ချိတ်ဆက်မှု ပြဿနာ: '+e.message,false,5000);
+  socket.on('connect_error', (e)=>{
+    console.error('socket err:', e.message);
+    // FIX #4: Always reset to idle on connection error
+    if(appState !== 'playing'){
+      stopSearchTimer();
+      showState('idle');
+      appState = 'idle';
+    }
+    toast('ချိတ်ဆက်မှု ပြဿနာ: '+e.message, false, 5000);
   });
 
-  // ── Feature 3: Rescue Bonus notification ──
-  socket.on('rescueBonus',({amount})=>{
-    toast(`🛡️ Rescue Bonus! +${amount.toLocaleString()} MMK ရရှိပြီ!`,true,5000);
+  // Rescue Bonus notification
+  socket.on('rescueBonus', ({amount})=>{
+    toast(`🛡️ Rescue Bonus! +${amount.toLocaleString()} MMK ရရှိပြီ!`, true, 5000);
     refreshBal().then(()=>{ if(user){ user.consecutiveLosses=0; } });
   });
 
-  // ── Feature 4: Global Payout Ticker ──
-  socket.on('globalPayout',({name,amount})=>{
-    showPayTicker(name,amount);
+  // Global Payout Ticker
+  socket.on('globalPayout', ({name, amount})=>{
+    showPayTicker(name, amount);
   });
 
-  socket.on('error',(d)=>{
-    const msg=typeof d==='string'?d:d?.msg||'Error';
-    // FIX: Only go to idle state if NOT currently in a game
-    // During gameplay, only show toast — do NOT reset the board
-    if (!gameId) {
-      stopSearchTimer();showState('idle');
+  // FIX #4: Error handling — reset to idle if not in active game
+  socket.on('error', (d)=>{
+    const msg = typeof d==='string' ? d : d?.msg||'Error';
+    if(appState !== 'playing'){
+      stopSearchTimer();
+      showState('idle');
+      appState = 'idle';
+      gameId = null;
     }
-    toast(msg,false,5000);
+    toast(msg, false, 5000);
   });
 
-  socket.on('insufficientBalance',(d)=>{
-    stopSearchTimer();showState('idle');
-    toast(`လက်ကျန်ငွေ မလုံလောက်ပါ — ကျန်: ${(d?.balance||0).toLocaleString()} MMK (500 MMK လိုသည်)`,false,5000);
+  // FIX #4: searchFailed — always reset to idle
+  socket.on('searchFailed', (d)=>{
+    stopSearchTimer();
+    showState('idle');
+    appState = 'idle';
+    gameId = null;
+    toast(d?.msg || 'ဆာဗာ error — ထပ်ကြိုးစားပါ', false, 5000);
   });
 
-  socket.on('waitingForPlayer',({gameId:gid})=>{
-    gameId=gid;
+  socket.on('insufficientBalance', (d)=>{
+    stopSearchTimer();
+    showState('idle');
+    appState = 'idle';
+    gameId = null;
+    toast(`လက်ကျန်ငွေ မလုံလောက်ပါ — ကျန်: ${(d?.balance||0).toLocaleString()} MMK`, false, 5000);
+  });
+
+  socket.on('waitingForPlayer', ({gameId:gid})=>{
+    gameId = gid;
+    appState = 'searching'; // FIX #4: mark state explicitly
     startSearchTimer();
   });
 
-  socket.on('gameStarted',(data)=>{
+  // FIX #5: gameStarted — complete real-time state sync
+  socket.on('gameStarted', (data)=>{
     stopSearchTimer();
-    gameId=data.gameId;
-    board=data.board||newBoard();
-    mySymbol=data.mySymbol;
-    isMyTurn=data.currentTurn===user.telegramId;
+    gameId = data.gameId;
+    board = data.board || newBoard();
+    mySymbol = data.mySymbol;
+    appState = 'playing'; // FIX #4
+    isMyTurn = Number(data.currentTurn) === Number(user.telegramId);
 
-    // Set player name labels — never reveal AI
-    const names=data.players||{};
-    const myName=names[user.telegramId]||'You';
-    const oppId=Object.keys(names).find(k=>parseInt(k)!==user.telegramId);
-    const oppName=oppId?names[oppId]:'ကစားသူ';
+    const names = data.players||{};
+    const myName = names[user.telegramId] || 'You';
+    const oppId = Object.keys(names).find(k=>parseInt(k)!==user.telegramId);
+    const oppName = oppId ? names[oppId] : 'ကစားသူ';
 
     if(mySymbol==='X'){
-      document.getElementById('p1n').textContent=myName;
-      document.getElementById('p2n').textContent=oppName;
-    }else{
-      document.getElementById('p1n').textContent=oppName;
-      document.getElementById('p2n').textContent=myName;
-      document.getElementById('p1b').className='badge b-x';
-      document.getElementById('p2b').className='badge b-o';
-    }
-
-    buildBoard();showState('play');updateTurnUI();startTurnTimer();
-
-    // ── Haptic feedback: Mobile Legends style 3-second strong pulse ──
-    try {
-      if (tg?.HapticFeedback) {
-        // notificationOccurred('success') + rapid heavy impacts for 3 seconds
-        // Pattern: success → heavy × 2 → success → heavy × 2 → ... every 200ms
-        const hapticSequence=[
-          {t:0,   fn:()=>tg.HapticFeedback.notificationOccurred('success')},
-          {t:200, fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:400, fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:600, fn:()=>tg.HapticFeedback.notificationOccurred('success')},
-          {t:800, fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:1000,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:1200,fn:()=>tg.HapticFeedback.notificationOccurred('success')},
-          {t:1400,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:1600,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:1800,fn:()=>tg.HapticFeedback.notificationOccurred('success')},
-          {t:2000,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:2200,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:2400,fn:()=>tg.HapticFeedback.notificationOccurred('success')},
-          {t:2600,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:2800,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-        ];
-        hapticSequence.forEach(({t,fn})=>setTimeout(()=>{try{fn();}catch(e){}},t));
-      } else if (navigator.vibrate) {
-        // Fallback: continuous 3-second vibration
-        navigator.vibrate(3000);
-      }
-    } catch(e) { /* haptic not supported */ }
-  });
-
-  socket.on('gameResumed',(data)=>{
-    stopSearchTimer();
-    gameId=data.gameId;mySymbol=data.mySymbol;
-    board=data.board||newBoard();
-    isMyTurn=data.currentTurn===user.telegramId;
-    const names=data.players||{};
-    const myName=names[user.telegramId]||'You';
-    const oppId=Object.keys(names).find(k=>parseInt(k)!==user.telegramId);
-    const oppName=oppId?names[oppId]:'ကစားသူ';
-    if(mySymbol==='X'){
-      document.getElementById('p1n').textContent=myName;
-      document.getElementById('p2n').textContent=oppName;
-      document.getElementById('p1b').className='badge b-x';
-      document.getElementById('p2b').className='badge b-o';
+      document.getElementById('p1n').textContent = myName;
+      document.getElementById('p2n').textContent = oppName;
+      document.getElementById('p1b').className = 'badge b-x';
+      document.getElementById('p2b').className = 'badge b-o';
     } else {
-      // FIX: p1 = X player (opponent), p2 = O player (me)
-      document.getElementById('p1n').textContent=oppName;
-      document.getElementById('p2n').textContent=myName;
-      document.getElementById('p1b').className='badge b-x';
-      document.getElementById('p2b').className='badge b-o';
+      document.getElementById('p1n').textContent = oppName;
+      document.getElementById('p2n').textContent = myName;
+      document.getElementById('p1b').className = 'badge b-x';
+      document.getElementById('p2b').className = 'badge b-o';
     }
-    buildBoard();showState('play');updateTurnUI();startTurnTimer();
 
-    // ── Haptic feedback: Mobile Legends style 3-second strong pulse ──
+    buildBoard(); showState('play'); updateTurnUI(); startTurnTimer();
+
+    // Haptic feedback
     try {
-      if (tg?.HapticFeedback) {
-        // notificationOccurred('success') + rapid heavy impacts for 3 seconds
-        // Pattern: success → heavy × 2 → success → heavy × 2 → ... every 200ms
-        const hapticSequence=[
+      if(tg?.HapticFeedback){
+        const seq=[
           {t:0,   fn:()=>tg.HapticFeedback.notificationOccurred('success')},
           {t:200, fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
           {t:400, fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
@@ -660,71 +634,102 @@ function connectSocket(joinId){
           {t:1200,fn:()=>tg.HapticFeedback.notificationOccurred('success')},
           {t:1400,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
           {t:1600,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:1800,fn:()=>tg.HapticFeedback.notificationOccurred('success')},
-          {t:2000,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:2200,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:2400,fn:()=>tg.HapticFeedback.notificationOccurred('success')},
-          {t:2600,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
-          {t:2800,fn:()=>tg.HapticFeedback.impactOccurred('heavy')},
         ];
-        hapticSequence.forEach(({t,fn})=>setTimeout(()=>{try{fn();}catch(e){}},t));
-      } else if (navigator.vibrate) {
-        // Fallback: continuous 3-second vibration
-        navigator.vibrate(3000);
-      }
-    } catch(e) { /* haptic not supported */ }
+        seq.forEach(({t,fn})=>setTimeout(()=>{try{fn();}catch(e){}},t));
+      } else if(navigator.vibrate){ navigator.vibrate(1500); }
+    } catch(e){}
   });
 
-  socket.on('moveMade',(data)=>{
-    board=data.board;
-    // FIX: server now always sends currentTurn; gameEnded=true means no next turn
+  socket.on('gameResumed', (data)=>{
+    stopSearchTimer();
+    gameId = data.gameId;
+    mySymbol = data.mySymbol;
+    board = data.board || newBoard();
+    appState = 'playing'; // FIX #4
+    isMyTurn = Number(data.currentTurn) === Number(user.telegramId);
+    const names = data.players||{};
+    const myName = names[user.telegramId]||'You';
+    const oppId = Object.keys(names).find(k=>parseInt(k)!==user.telegramId);
+    const oppName = oppId ? names[oppId] : 'ကစားသူ';
+    if(mySymbol==='X'){
+      document.getElementById('p1n').textContent = myName;
+      document.getElementById('p2n').textContent = oppName;
+    } else {
+      document.getElementById('p1n').textContent = oppName;
+      document.getElementById('p2n').textContent = myName;
+    }
+    document.getElementById('p1b').className = 'badge b-x';
+    document.getElementById('p2b').className = 'badge b-o';
+    buildBoard(); showState('play'); updateTurnUI(); startTurnTimer();
+  });
+
+  // FIX #5: moveMade — guaranteed real-time sync
+  socket.on('moveMade', (data)=>{
+    board = data.board;
     if(!data.gameEnded){
+      // FIX #5: Use Number comparison for currentTurn
       isMyTurn = (data.currentTurn !== null && data.currentTurn !== undefined)
-                   ? data.currentTurn===user.telegramId
+                   ? Number(data.currentTurn) === Number(user.telegramId)
                    : false;
-      updateBoard(data.row,data.col,data.symbol);
+      updateBoard(data.row, data.col, data.symbol);
       updateTurnUI();
       resetTurnTimer();
     } else {
-      // Winning/draw move: just render the cell, timers stop on gameOver
-      isMyTurn=false;
-      updateBoard(data.row,data.col,data.symbol);
+      isMyTurn = false;
+      updateBoard(data.row, data.col, data.symbol);
       updateTurnUI();
       stopTurnTimer();
     }
   });
 
-  socket.on('turnChanged',(data)=>{
-    isMyTurn=data.currentTurn===user.telegramId;
-    updateTurnUI();resetTurnTimer();
+  socket.on('turnChanged', (data)=>{
+    isMyTurn = Number(data.currentTurn) === Number(user.telegramId);
+    updateTurnUI();
+    resetTurnTimer();
   });
 
-  socket.on('gameOver',(data)=>{
+  socket.on('gameOver', (data)=>{
     stopTurnTimer();
-    board=data.board;
+    board = data.board;
     refreshAllCells();
-    const fdOv = document.getElementById('fakeDiscOv');
-    if (fdOv) fdOv.classList.remove('show');
+    hideDiscOv(); // FIX #3: hide disconnect overlay on game over
     const endedGameId = gameId;
     gameId = null;
-    mySymbol = null;
+    appState = 'idle'; // FIX #4
     setTimeout(()=>{
-      showResult(data.winner,data.reason);
-      refreshBal(); // also refreshes turnover progress
-    },700);
+      showResult(data.winner, data.reason);
+      refreshBal();
+    }, 700);
   });
 
-  // ✅ CHANGED: opponentDisconnected now just a placeholder (instant loss on backend)
-  socket.on('opponentDisconnected',()=>{
+  // FIX #3: opponentDisconnectedDelay — show 10s countdown, NOT instant loss
+  socket.on('opponentDisconnectedDelay', (data)=>{
     stopTurnTimer();
-    const b=document.getElementById('turnB');
-    b.className='badge b-ylw';b.textContent='⌛ ကစားသူ ထွက်သွားသည်...';
+    isMyTurn = false;
+    updateTurnUI();
+    // Disable board interaction during wait
+    document.querySelectorAll('.cell').forEach(c=>{ c.classList.add('dis'); c.classList.remove('my'); });
+    showDiscOv(data?.seconds || 10);
   });
 
-  // ✅ NEW: Receive emote
-  socket.on('emoteReceived',({senderId, emote})=>{
-    const names = {};
-    // resolve display name from current player name elements
+  // FIX #3: opponentReconnected — hide overlay, resume game
+  socket.on('opponentReconnected', (data)=>{
+    hideDiscOv();
+    toast('✅ ကစားသူ ပြန်လည်ချိတ်ဆက်ပြီ!', true, 3000);
+    // Re-enable board for the correct player
+    updateInteract();
+    resetTurnTimer();
+  });
+
+  socket.on('opponentDisconnected', ()=>{
+    stopTurnTimer();
+    const b = document.getElementById('turnB');
+    b.className = 'badge b-ylw';
+    b.textContent = '⌛ ကစားသူ ထွက်သွားသည်...';
+  });
+
+  // Emote
+  socket.on('emoteReceived', ({senderId, emote})=>{
     const isMine = senderId === user?.telegramId;
     const senderName = isMine
       ? (document.getElementById('p1n')?.textContent || 'You')
@@ -732,104 +737,118 @@ function connectSocket(joinId){
     showEmoteBubble(isMine ? '😤 You' : `💬 ${senderName}`, emote);
   });
 
-  socket.on('searchTimeout',()=>{stopSearchTimer();showState('idle');});
-  socket.on('searchCancelled',()=>{stopSearchTimer();showState('idle');});
-
-  // ── Professional Fake Disconnect / Reconnect UI ──
-  socket.on('fakeDisconnect', (data) => {
-    stopTurnTimer();
-    isMyTurn = false;
-    // Disable board
-    document.querySelectorAll('.cell').forEach(c => { c.classList.add('dis'); c.classList.remove('my'); });
-
-    // Show overlay
-    const ov = document.getElementById('fakeDiscOv');
-    const title = document.getElementById('fdTitle');
-    const alert = document.getElementById('fdAlert');
-    if (title) title.textContent = data?.message || 'အင်တာနက်လိုင်းကျ၍ ပြန်လည်ချိတ်ဆက်နေပါသည်....';
-    if (alert) alert.style.display = 'none';
-    if (ov) ov.classList.add('show');
-
-    // After ~5s show loss message
-    setTimeout(() => {
-      if (alert) alert.style.display = 'block';
-      if (title) title.textContent = 'ချိတ်ဆက်မှု ဆက်လက် မရပါ...';
-    }, 4800);
-  });
+  socket.on('searchTimeout', ()=>{ stopSearchTimer(); showState('idle'); appState='idle'; gameId=null; });
+  socket.on('searchCancelled', ()=>{ stopSearchTimer(); showState('idle'); appState='idle'; gameId=null; });
+  socket.on('searchUpdate', (d)=>{ toast(d?.message||'', true, 3000); });
 }
 
-/* ── States ── */
+/* FIX #3: Disconnect Overlay with Countdown */
+function showDiscOv(seconds){
+  const ov = document.getElementById('discOv');
+  const countdown = document.getElementById('discCountdown');
+  const title = document.getElementById('discTitle');
+  clearInterval(discCountdownTimer);
+
+  let remaining = seconds || 10;
+  title.textContent = 'ကစားသူ လိုင်းကျသွားပါသည်';
+  countdown.textContent = remaining;
+  countdown.style.color = '#f5b800';
+  ov.classList.add('show');
+
+  discCountdownTimer = setInterval(()=>{
+    remaining--;
+    countdown.textContent = remaining;
+    if(remaining <= 3){ countdown.style.color = '#ef4444'; }
+    if(remaining <= 0){
+      clearInterval(discCountdownTimer);
+      discCountdownTimer = null;
+    }
+  }, 1000);
+}
+
+function hideDiscOv(){
+  clearInterval(discCountdownTimer);
+  discCountdownTimer = null;
+  document.getElementById('discOv').classList.remove('show');
+}
+
+/* States */
 function showState(s){
-  document.getElementById('sIdle').style.display=s==='idle'?'block':'none';
-  document.getElementById('sSearch').style.display=s==='search'?'block':'none';
-  document.getElementById('sPlay').style.display=s==='play'?'block':'none';
+  document.getElementById('sIdle').style.display   = s==='idle'   ? 'block' : 'none';
+  document.getElementById('sSearch').style.display = s==='search' ? 'block' : 'none';
+  document.getElementById('sPlay').style.display   = s==='play'   ? 'block' : 'none';
 }
 
-/* ── Search ── */
+/* FIX #4: Search with proper state tracking */
 async function startSearch(joinId){
-  if(!user){toast('Login ဝင်ပါ',false);return;}
+  if(!user){ toast('Login ဝင်ပါ', false); return; }
   await refreshBal();
-  if(Number(user.balance)<selectedBet){
-    toast(`လက်ကျန်ငွေ မလုံလောက်ပါ (${selectedBet.toLocaleString()} MMK လိုသည်)`,false,4000);return;
+  if(Number(user.balance) < selectedBet){
+    toast(`လက်ကျန်ငွေ မလုံလောက်ပါ (${selectedBet.toLocaleString()} MMK လိုသည်)`, false, 4000);
+    return;
   }
   connectSocket(joinId);
   showState('search');
-  searchLeft=60;
-  document.getElementById('sSec').textContent=60;
-  socket.emit('findGame',{userId:user.telegramId, betAmount:selectedBet});
+  appState = 'searching';
+  searchLeft = 60;
+  document.getElementById('sSec').textContent = 60;
+  socket.emit('findGame', {userId:user.telegramId, betAmount:selectedBet});
 }
 
 function cancelSearch(){
-  socket?.emit('cancelSearch',{userId:user?.telegramId});
-  stopSearchTimer();showState('idle');
+  socket?.emit('cancelSearch', {userId:user?.telegramId});
+  stopSearchTimer();
+  showState('idle');
+  appState = 'idle';
+  gameId = null;
 }
 
 function startSearchTimer(){
-  clearInterval(searchTimer);searchLeft=60; // ✅ CHANGED
-  searchTimer=setInterval(()=>{
-    searchLeft--;document.getElementById('sSec').textContent=searchLeft;
-    if(searchLeft<=0){clearInterval(searchTimer);}
-  },1000);
+  clearInterval(searchTimer); searchLeft = 60;
+  searchTimer = setInterval(()=>{
+    searchLeft--;
+    document.getElementById('sSec').textContent = searchLeft;
+    if(searchLeft <= 0){ clearInterval(searchTimer); }
+  }, 1000);
 }
-function stopSearchTimer(){clearInterval(searchTimer);}
+function stopSearchTimer(){ clearInterval(searchTimer); }
 
-/* ── Board ── */
+/* Board */
 function buildBoard(){
-  const el=document.getElementById('board');
-  el.innerHTML='';
-  for(let r=0;r<5;r++){
-    for(let c=0;c<5;c++){
-      const d=document.createElement('div');
-      d.className='cell';d.id=`c${r}${c}`;
-      d.dataset.r=r;d.dataset.c=c;
-      d.addEventListener('click',()=>makeMove(r,c));
-      const v=board[r][c];
-      if(v){d.textContent=v==='X'?'✖':'⭕';d.classList.add('taken',v==='X'?'cx':'co');}
+  const el = document.getElementById('board');
+  el.innerHTML = '';
+  for(let r=0; r<5; r++){
+    for(let c=0; c<5; c++){
+      const d = document.createElement('div');
+      d.className = 'cell'; d.id = `c${r}${c}`;
+      d.dataset.r = r; d.dataset.c = c;
+      d.addEventListener('click', ()=>makeMove(r, c));
+      const v = board[r][c];
+      if(v){ d.textContent = v==='X'?'✖':'⭕'; d.classList.add('taken', v==='X'?'cx':'co'); }
       el.appendChild(d);
     }
   }
   updateInteract();
 }
 
-function updateBoard(row,col,sym){
-  const cell=document.getElementById(`c${row}${col}`);
-  if(!cell)return;
-  // Always render — don't skip if 'taken' already set (opponent move may not have rendered yet)
-  cell.textContent=sym==='X'?'✖':'⭕';
+function updateBoard(row, col, sym){
+  const cell = document.getElementById(`c${row}${col}`);
+  if(!cell) return;
+  cell.textContent = sym==='X'?'✖':'⭕';
   cell.classList.remove('cx','co','my','dis');
-  cell.classList.add('taken',sym==='X'?'cx':'co','pp');
+  cell.classList.add('taken', sym==='X'?'cx':'co', 'pp');
   updateInteract();
 }
 
 function refreshAllCells(){
-  for(let r=0;r<5;r++){
-    for(let c=0;c<5;c++){
-      const v=board[r][c];
-      const cell=document.getElementById(`c${r}${c}`);
-      if(!cell)continue;
-      if(v&&!cell.classList.contains('taken')){
-        cell.textContent=v==='X'?'✖':'⭕';
-        cell.classList.add('taken',v==='X'?'cx':'co','pp');
+  for(let r=0; r<5; r++){
+    for(let c=0; c<5; c++){
+      const v = board[r][c];
+      const cell = document.getElementById(`c${r}${c}`);
+      if(!cell) continue;
+      if(v && !cell.classList.contains('taken')){
+        cell.textContent = v==='X'?'✖':'⭕';
+        cell.classList.add('taken', v==='X'?'cx':'co', 'pp');
       }
     }
   }
@@ -837,49 +856,56 @@ function refreshAllCells(){
 
 function updateInteract(){
   document.querySelectorAll('.cell').forEach(c=>{
-    if(c.classList.contains('taken')){c.classList.add('dis');c.classList.remove('my');}
-    else if(isMyTurn){c.classList.remove('dis');c.classList.add('my');}
-    else{c.classList.add('dis');c.classList.remove('my');}
+    if(c.classList.contains('taken')){ c.classList.add('dis'); c.classList.remove('my'); }
+    else if(isMyTurn){ c.classList.remove('dis'); c.classList.add('my'); }
+    else{ c.classList.add('dis'); c.classList.remove('my'); }
   });
 }
 
-function makeMove(r,c){
-  if(!isMyTurn||!gameId||!socket?.connected)return;
-  const cell=document.getElementById(`c${r}${c}`);
-  if(cell?.classList.contains('taken'))return;
-  isMyTurn=false;updateInteract();
-  socket.emit('makeMove',{gameId,row:r,col:c});
+// FIX #6: makeMove with spam guard
+let movePending = false;
+function makeMove(r, c){
+  if(!isMyTurn || !gameId || !socket?.connected) return;
+  if(movePending) return; // FIX #6: prevent double-fire
+  const cell = document.getElementById(`c${r}${c}`);
+  if(cell?.classList.contains('taken')) return;
+  isMyTurn = false;
+  movePending = true;
+  updateInteract();
+  socket.emit('makeMove', {gameId, row:r, col:c});
+  // Auto-release after 500ms (server will confirm or reject)
+  setTimeout(()=>{ movePending = false; }, 500);
 }
 
-/* ── Timer ── */
+/* Timer */
 function startTurnTimer(){
-  turnLeft=TURN_S;updateTimerUI(TURN_S);
+  turnLeft = TURN_S; updateTimerUI(TURN_S);
   stopTurnTimer();
-  turnTimer=setInterval(()=>{
-    turnLeft--;updateTimerUI(turnLeft);
-    if(turnLeft<=0)stopTurnTimer();
-  },1000);
+  turnTimer = setInterval(()=>{
+    turnLeft--; updateTimerUI(turnLeft);
+    if(turnLeft<=0) stopTurnTimer();
+  }, 1000);
 }
-function resetTurnTimer(){stopTurnTimer();startTurnTimer();}
-function stopTurnTimer(){clearInterval(turnTimer);}
+function resetTurnTimer(){ stopTurnTimer(); startTurnTimer(); }
+function stopTurnTimer(){ clearInterval(turnTimer); }
 
 function updateTimerUI(val){
-  const num=document.getElementById('tNum');
-  const fill=document.getElementById('tFill');
-  if(!num||!fill)return;
-  const v=Math.max(0,val);
-  num.textContent=v;
-  const pct=v/TURN_S;
-  fill.style.strokeDashoffset=201*(1-pct);
-  if(v<=3){fill.style.stroke='#ef4444';num.style.color='#f87171';}
-  else if(v<=6){fill.style.stroke='#f97316';num.style.color='#fb923c';}
-  else{fill.style.stroke='#f5b800';num.style.color='';}
+  const num = document.getElementById('tNum');
+  const fill = document.getElementById('tFill');
+  if(!num||!fill) return;
+  const v = Math.max(0, val);
+  num.textContent = v;
+  const pct = v/TURN_S;
+  fill.style.strokeDashoffset = 201*(1-pct);
+  if(v<=3){ fill.style.stroke='#ef4444'; num.style.color='#f87171'; }
+  else if(v<=6){ fill.style.stroke='#f97316'; num.style.color='#fb923c'; }
+  else{ fill.style.stroke='#f5b800'; num.style.color=''; }
 }
 
-/* ── Turn UI ── */
+/* Turn UI */
 function updateTurnUI(){
-  const b=document.getElementById('turnB');
-  if(isMyTurn){b.className='badge b-grn';b.textContent='🎯 သင့်လှည့်';}
+  const b = document.getElementById('turnB');
+  if(isMyTurn){ b.className='badge b-grn'; b.textContent='🎯 သင့်လှည့်'; }
   else{
     b.className='badge b-pur';
     b.innerHTML='<div class="dots"><span></span><span></span><span></span></div> ကစားသူ၏ လှည့်';
@@ -887,72 +913,69 @@ function updateTurnUI(){
   updateInteract();
 }
 
-/* ── Result ── */
-function showResult(winner,reason){
-  const ov=document.getElementById('resOv');
-  const em=document.getElementById('rEm');
-  const tit=document.getElementById('rTit');
-  const sub=document.getElementById('rSub');
+/* Result */
+function showResult(winner, reason){
+  const ov = document.getElementById('resOv');
+  const em = document.getElementById('rEm');
+  const tit = document.getElementById('rTit');
+  const sub = document.getElementById('rSub');
   const prizes = BET_TABLE[selectedBet] || BET_TABLE[500];
 
-  if(winner===user.telegramId){
-    em.textContent='🏆';tit.textContent='အနိုင်ရပြီ!';tit.style.color='#4ade80';
-    sub.textContent=`🎉 ဆုကြေး +${prizes.win.toLocaleString()} MMK ရရှိပြီ!`;
-  }else if(winner===-1){
-    em.textContent='🤝';tit.textContent='သရေကျပါသည်!';tit.style.color='#60a5fa';
-    sub.textContent=`+${prizes.draw.toLocaleString()} MMK ပြန်ရရှိပါသည်`;
-  }else{
-    em.textContent='😔';tit.textContent='ရှုံးပြီ';tit.style.color='#f87171';
-    sub.textContent=reason==='timeout'?'⏱ အချိန်ကုန်သွားသည်':
-                   reason==='disconnect'?'ကစားသူ ထွက်သွားသည်':
-                   reason==='connectionLost'?'🌐 အင်တာနက်လိုင်းမကောင်းသဖြင့် ရှုံးသတ်မှတ်ခဲ့သည်':
-                   'ထပ်ကြိုးစားပါ!';
+  if(Number(winner) === Number(user.telegramId)){
+    em.textContent='🏆'; tit.textContent='အနိုင်ရပြီ!'; tit.style.color='#4ade80';
+    sub.textContent = `🎉 ဆုကြေး +${prizes.win.toLocaleString()} MMK ရရှိပြီ!`;
+  } else if(winner===-1){
+    em.textContent='🤝'; tit.textContent='သရေကျပါသည်!'; tit.style.color='#60a5fa';
+    sub.textContent = `+${prizes.draw.toLocaleString()} MMK ပြန်ရရှိပါသည်`;
+  } else {
+    em.textContent='😔'; tit.textContent='ရှုံးပြီ'; tit.style.color='#f87171';
+    sub.textContent = reason==='timeout'   ? '⏱ အချိန်ကုန်သွားသည်' :
+                     reason==='disconnect' ? '🌐 ကစားသူ ချိတ်ဆက်မှုပြတ်တောက်ရာ အနိုင်ရသည်' :
+                     'ထပ်ကြိုးစားပါ!';
   }
-  ov.style.display='flex';
+  ov.style.display = 'flex';
 }
 
 function playAgain(){
-  document.getElementById('resOv').style.display='none';
-  if(socket){socket.disconnect();socket=null;}
-  gameId=null;mySymbol=null;isMyTurn=false;board=newBoard();
-  // FIX: refresh balance first so stale "insufficient funds" doesn't block play
+  document.getElementById('resOv').style.display = 'none';
+  if(socket){ socket.disconnect(); socket=null; }
+  gameId=null; mySymbol=null; isMyTurn=false; board=newBoard();
+  appState='idle'; movePending=false;
   refreshBal().then(()=>{ showState('idle'); });
 }
 
 async function refreshBal(){
-  if(!user?.telegramId)return;
+  if(!user?.telegramId) return;
   try{
-    const r=await fetch(`${API}/api/user/${user.telegramId}`);
-    const d=await r.json();
-    if(d.balance!==undefined){
-      user.balance=Number(d.balance);
-      user.turnoverTarget=d.turnoverTarget||0;
-      user.turnoverProgress=d.turnoverProgress||0;
-      user.consecutiveLosses=d.consecutiveLosses||0;
-      document.getElementById('topBal').textContent=`${user.balance.toLocaleString()} MMK`;
+    const r = await fetch(`${API}/api/user/${user.telegramId}`);
+    const d = await r.json();
+    if(d.balance !== undefined){
+      user.balance = Number(d.balance);
+      user.turnoverTarget = d.turnoverTarget||0;
+      user.turnoverProgress = d.turnoverProgress||0;
+      user.consecutiveLosses = d.consecutiveLosses||0;
+      document.getElementById('topBal').textContent = `${user.balance.toLocaleString()} MMK`;
       updateTurnoverUI();
     }
-  }catch(e){}
+  } catch(e){}
 }
 
-
-// ✅ NEW: Emote System
+/* Emote System */
 let emoteTimeout = null;
 
 function toggleEmoteMenu(e){
   e.stopPropagation();
-  const popup = document.getElementById('emotePopup');
-  popup.classList.toggle('open');
+  document.getElementById('emotePopup').classList.toggle('open');
 }
 
-document.addEventListener('click', () => {
+document.addEventListener('click', ()=>{
   document.getElementById('emotePopup')?.classList.remove('open');
 });
 
 function sendEmote(emote){
   if(!socket?.connected || !gameId) return;
   document.getElementById('emotePopup').classList.remove('open');
-  socket.emit('sendEmote', { gameId, emote });
+  socket.emit('sendEmote', {gameId, emote});
 }
 
 function showEmoteBubble(name, emote){
@@ -960,19 +983,18 @@ function showEmoteBubble(name, emote){
   const nameEl = document.getElementById('ebName');
   const textEl = document.getElementById('ebText');
   if(!el) return;
-  nameEl.textContent = name || '';
+  nameEl.textContent = name||'';
   textEl.textContent = emote;
   clearTimeout(emoteTimeout);
   el.classList.remove('hide');
   el.classList.add('show');
-  emoteTimeout = setTimeout(() => {
+  emoteTimeout = setTimeout(()=>{
     el.classList.add('hide');
     el.classList.remove('show');
   }, 2800);
 }
 
-window.addEventListener('DOMContentLoaded',init);
+window.addEventListener('DOMContentLoaded', init);
 </script>
-<div id="emoteBubble"><div class="eb-name" id="ebName"></div><div id="ebText"></div></div>
 </body>
 </html>

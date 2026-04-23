@@ -236,13 +236,6 @@ input:checked+.sl2:before{transform:translateX(19px);}
         </div>
         <label class="tog"><input type="checkbox" id="maintTog" onchange="toggleMaint(this.checked)"><span class="sl2"></span></label>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div>
-          <div style="font-weight:700;font-size:14px;">🤖 Strong Bot Mode</div>
-          <div style="font-size:11px;color:var(--sub);margin-top:2px;">ဖွင့်ထားလျှင် အားလုံး Bot နှင့်တွေ့မည်</div>
-        </div>
-        <label class="tog"><input type="checkbox" id="allBotTog" onchange="toggleAllBot(this.checked)"><span class="sl2"></span></label>
-      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div>
           <div style="font-weight:700;font-size:14px;">📢 Fake Notifications</div>
@@ -500,7 +493,6 @@ async function loadDash(){
     document.getElementById('hQ').textContent=d.queueLength||0;
     const s=await api('/api/admin/settings');
     document.getElementById('maintTog').checked=!!s.maintenance;
-    document.getElementById('allBotTog').checked=!!s.allBotMode;
     document.getElementById('fakeNotifTog').checked=!!s.fakeNotifications;
     const iv=s.fakeNotifInterval||3;
     document.getElementById('fakeIntervalInp').value=iv;
@@ -515,12 +507,6 @@ async function toggleMaint(on){
   }catch(e){toast('Error',false);}
 }
 
-async function toggleAllBot(on){
-  try{
-    await api('/api/admin/allbotmode',{method:'POST',body:JSON.stringify({enabled:on})});
-    toast(on?'🤖 Strong Bot Mode ON':'👥 Strong Bot Mode OFF',true);
-  }catch(e){toast('Error',false);}
-}
 
 async function toggleFakeNotif(on){
   try{
@@ -733,7 +719,7 @@ async function loadUsers(page){
           <div>
             <div style="font-weight:700;font-size:14px;">${esc(u.firstName||u.username||'User')}
               ${u.isBanned?'<span class="bdg bg-red" style="margin-left:5px;">Banned</span>':''}
-              ${u.botMode?'<span class="bdg bg-blu" style="margin-left:5px;">🤖 Bot</span>':''}${u.role==='agent'?'<span class="bdg bg-grn" style="margin-left:5px;">🎯 Agent</span>':''}
+              ${u.role==='agent'?'<span class="bdg bg-grn" style="margin-left:5px;">🎯 Agent</span>':''}
             </div>
             <div style="font-size:11px;color:var(--sub);margin-top:2px;">@${esc(u.username||'-')} • ID: ${u.telegramId}</div>
           </div>
@@ -765,7 +751,6 @@ async function loadHighBalancers(){
           <div>
             <div style="font-weight:700;font-size:14px;">${esc(u.firstName||u.username||'User')}
               ${u.isBanned?'<span class="bdg bg-red" style="margin-left:5px;">Banned</span>':''}
-              ${u.botMode?'<span class="bdg bg-blu" style="margin-left:5px;">🤖 Bot</span>':''}
             </div>
             <div style="font-size:11px;color:var(--sub);margin-top:2px;">@${esc(u.username||'-')} • ID: ${u.telegramId}</div>
           </div>
@@ -812,10 +797,6 @@ async function showUserDet(u){
         <button class="btn btn-ylw" style="padding:10px;" onclick="adjBal(${u.telegramId})">OK</button>
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <span class="rlbl">🤖 Bot Mode</span>
-      <label class="tog"><input type="checkbox" id="botModeTog" ${u.botMode?'checked':''} onchange="toggleBotMode(${u.telegramId}, this.checked)"><span class="sl2"></span></label>
-    </div>
     <button class="btn ${u.isBanned?'btn-grn':'btn-red'} btn-full" onclick="togBan(${u.telegramId},${!u.isBanned})">
       ${u.isBanned?'🔓 Unban User':'🚫 Ban User'}
     </button>
@@ -825,14 +806,6 @@ async function showUserDet(u){
   det.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
-async function toggleBotMode(tid, enabled){
-  try{
-    await api(`/api/admin/users/${tid}/botmode`,{method:'POST',body:JSON.stringify({enabled})});
-    toast(enabled?'🤖 Bot Mode ON':'👤 Bot Mode OFF',true);
-    loadUsers(usrPage);
-    loadHighBalancers(); // refresh high balancers too
-  }catch(e){toast('Error: '+e.message,false);}
-}
 
 async function adjBal(tid){
   const a=parseInt(document.getElementById('adjA').value);
