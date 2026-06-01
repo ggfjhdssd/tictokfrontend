@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>TicToeTic — Admin</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -202,6 +203,7 @@ input:checked+.sl2:before{transform:translateX(19px);}
     <button class="tab" onclick="showTab('msg')">📢 Message</button>
     <button class="tab" onclick="showTab('codes')">🎟️ Codes</button>
     <button class="tab" onclick="showTab('agents')">🎯 Agents</button>
+    <button class="tab" onclick="showTab('analytics')">📈 Analytics</button>
   </div>
 
   <!-- ─── DASHBOARD ─── -->
@@ -378,6 +380,25 @@ input:checked+.sl2:before{transform:translateX(19px);}
     <div id="agentPag" style="display:flex;justify-content:center;gap:7px;margin-top:10px;flex-wrap:wrap;"></div>
     <div class="det-panel" id="agentDet"></div>
   </div>
+
+  <!-- ─── ANALYTICS ─── -->
+  <div id="tab-analytics" style="display:none;">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:11px;">
+      <button class="btn btn-pur btn-sm" onclick="loadAnalytics()">🔄 Refresh Charts</button>
+    </div>
+    <div style="background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:14px;padding:13px;margin-bottom:11px;">
+      <div style="font-weight:800;font-size:.9rem;margin-bottom:10px;color:var(--ylw);">💰 နေ့စဉ် ဝင်/ထွက် ငွေ (၃၀ ရက်)</div>
+      <div style="overflow-x:auto;"><canvas id="chartRev" height="170" style="min-width:340px;width:100%;"></canvas></div>
+    </div>
+    <div style="background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:14px;padding:13px;margin-bottom:11px;">
+      <div style="font-weight:800;font-size:.9rem;margin-bottom:10px;color:var(--blu);">👥 နေ့စဉ် User အသစ် (၃၀ ရက်)</div>
+      <div style="overflow-x:auto;"><canvas id="chartUsers" height="150" style="min-width:340px;width:100%;"></canvas></div>
+    </div>
+    <div style="background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:14px;padding:13px;">
+      <div style="font-weight:800;font-size:.9rem;margin-bottom:10px;color:var(--grn);">⏰ လူအများဆုံး ဆော့ချိန် (၇ ရက်)</div>
+      <div style="overflow-x:auto;"><canvas id="chartHours" height="150" style="min-width:340px;width:100%;"></canvas></div>
+    </div>
+  </div>
 </div><!-- /app -->
 
 <script>
@@ -462,7 +483,7 @@ async function tryAutoAuth(){
 }
 
 /* ── Tabs ── */
-const TABS=['dash','dep','wd','users','high','invited','history','msg','codes','agents'];
+const TABS=['dash','dep','wd','users','high','invited','history','msg','codes','agents','analytics'];
 function showTab(name){
   TABS.forEach(t=>{
     document.getElementById('tab-'+t).style.display=t===name?'block':'none';
@@ -476,6 +497,7 @@ function showTab(name){
   if(name==='history')loadHistory(1);
   if(name==='codes')loadCodes();
   if(name==='agents')loadAgents(1);
+  if(name==='analytics')loadAnalytics();
 }
 
 /* ── Dashboard ── */
@@ -1156,6 +1178,47 @@ function toggleInvDetail(id){
 }
 
 
+
+/* ── Analytics Charts ── */
+function mkChart(id,type,labels,datasets,extra={}){
+  const ctx=document.getElementById(id);if(!ctx)return;
+  const ex=Chart.getChart(id);if(ex)ex.destroy();
+  return new Chart(ctx,{type,data:{labels,datasets},options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:datasets.length>1,labels:{color:'rgba(255,255,255,.6)',font:{size:10}}}},
+    scales:{
+      x:{ticks:{color:'rgba(255,255,255,.45)',font:{size:9},maxRotation:45},grid:{color:'rgba(255,255,255,.05)'}},
+      y:{ticks:{color:'rgba(255,255,255,.45)',font:{size:9},callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v},grid:{color:'rgba(255,255,255,.05)'}}
+    },...extra
+  }});
+}
+async function loadAnalytics(){
+  try{
+    const d=await api('/api/admin/analytics');
+    const YEAR=new Date().getFullYear();
+    const days30=[];for(let i=29;i>=0;i--){days30.push(new Date(Date.now()-i*86400000).toISOString().slice(0,10));}
+    const lbl=days30.map(d=>d.slice(5));
+
+    const depMap={};(d.depDaily||[]).forEach(x=>depMap[x._id]=x.total);
+    const wdMap={};(d.wdDaily||[]).forEach(x=>wdMap[x._id]=x.total);
+    mkChart('chartRev','bar',lbl,[
+      {label:'ဝင်ငွေ',data:days30.map(dd=>depMap[dd]||0),backgroundColor:'rgba(0,204,136,.5)',borderColor:'#00cc88',borderWidth:1},
+      {label:'ထွက်ငွေ',data:days30.map(dd=>wdMap[dd]||0),backgroundColor:'rgba(245,69,101,.4)',borderColor:'#f54565',borderWidth:1}
+    ]);
+
+    const uMap={};(d.newUsersDaily||[]).forEach(x=>uMap[x._id]=x.count);
+    mkChart('chartUsers','line',lbl,[
+      {label:'User အသစ်',data:days30.map(dd=>uMap[dd]||0),borderColor:'#3d9eff',backgroundColor:'rgba(61,158,255,.12)',tension:.35,fill:true,pointRadius:2}
+    ]);
+
+    const hMap={};(d.gameHourly||[]).forEach(x=>hMap[x._id]=x.count);
+    const maxH=Math.max(...Object.values(hMap),1);
+    const hours=Array.from({length:24},(_,i)=>i+'h');
+    mkChart('chartHours','bar',hours,[
+      {label:'ပွဲ',data:hours.map((_,i)=>hMap[i]||0),backgroundColor:hours.map((_,i)=>`rgba(92,53,245,${0.25+(hMap[i]||0)/maxH*0.7})`),borderRadius:3}
+    ]);
+  }catch(e){toast('Analytics error: '+e.message,false);}
+}
 
 function parseErr(e){
   try{return JSON.parse(e.message).error||e.message;}catch{return e.message;}
